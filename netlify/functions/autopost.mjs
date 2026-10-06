@@ -1,9 +1,9 @@
-import { store, runItem } from "../lib/shared.mjs";
+import { store, runItem, env } from "../lib/shared.mjs";
 
 // Runs every 10 minutes. Posts every queued card whose time has come.
 export default async () => {
   const s = store();
-  const siteUrl = process.env.URL;
+  const siteUrl = env("URL");
   const meta = await s.get("meta", { type: "json" });
   if (!meta || !siteUrl) return;
   const now = Date.now();

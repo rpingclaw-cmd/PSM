@@ -1,4 +1,4 @@
-import { store, json, authorized, listPages, runItem } from "../lib/shared.mjs";
+import { store, json, authorized, listPages, runItem, env } from "../lib/shared.mjs";
 
 const SAFE = /^[A-Za-z0-9_.|:-]{1,120}$/;
 
@@ -12,7 +12,7 @@ export default async (req) => {
   const path = url.pathname.replace(/^\/api\/?/, "");
   const parts = path.split("/").filter(Boolean).map(decodeURIComponent);
   const s = store();
-  const siteUrl = process.env.URL || url.origin;
+  const siteUrl = env("URL") || url.origin;
 
   try {
     // Public: card images for Meta to fetch. Keys contain a random token, so they can't be guessed.
