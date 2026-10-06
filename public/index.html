@@ -1595,7 +1595,7 @@ async function callProvider(pid,prompt,{json,signal,images,parts,onStatus}){
     }catch(e){
       if(e&&e.name==='AbortError') throw e;
       const daily=/per day|PerDay|daily|quota/i.test((e&&e.message)||'');
-      if(e&&e.code===429&&!daily&&attempt===0){const w=Math.min(65,e.retryAfter||30);onStatus&&onStatus(`${PROVIDERS[pid].label} speed limit — waiting ${w}s…`);await sleep(w*1000);continue}
+      if(e&&e.code===429&&!daily&&attempt===0){const w=Math.min(65,e.retryAfter||(pid==='mistral'?3:30));onStatus&&onStatus(`${PROVIDERS[pid].label} speed limit — waiting ${w}s…`);await sleep(w*1000);continue}
       throw e;
     }
   }
@@ -1825,7 +1825,9 @@ $('#pane-setup').addEventListener('click',async e=>{
   if(ds.btest){const pid=ds.btest,st=document.querySelector(`[data-bstat="${pid}"]`);if(!pKey(pid)){st.textContent='Paste a key first.';return}
     st.textContent='Checking…';try{if(!(state.settings.ai.models||{})[pid]&&!PROVIDERS[pid].model)await autoModel(pid);const ids=await listOaiModels(pid);const m=pModel(pid);
       if(m&&!ids.includes(m)){const nm=await autoModel(pid);st.textContent=`Key works. ${m} not offered — now using ${nm}.`;renderSetup();return}
-      await oaiChat(pid,'Reply with the word OK.',{});delete cooled[pid];st.textContent=`Key works. Using ${pModel(pid)}.`}catch(err){st.textContent=providerError(pid,err)}}
+      await sleep(1500);
+      try{await oaiChat(pid,'Reply with the word OK.',{})}catch(e1){if(e1&&e1.code===429){st.textContent='Busy — trying again in a few seconds…';await sleep(Math.min(20,e1.retryAfter||5)*1000);await oaiChat(pid,'Reply with the word OK.',{})}else throw e1}
+      delete cooled[pid];st.textContent=`Key works. Using ${pModel(pid)}.`}catch(err){st.textContent=providerError(pid,err)}}
   if(ds.pdel){state.settings.periods=state.settings.periods.filter(p=>p.id!==ds.pdel);scheduleSave();renderSetup();cardChanged()}
   if(ds.mdef){const[mid,pid]=ds.mdef.split('|');state.settings.masters.find(m=>m.id===mid).photo=pid;scheduleSave();renderSetup();renderPhotoStrip();cardChanged()}
   if(ds.mrm&&confirm('Remove this photo?')){const[mid,pid]=ds.mrm.split('|');const m=state.settings.masters.find(x=>x.id===mid);
