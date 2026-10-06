@@ -91,6 +91,21 @@ export default async (req) => {
       }
     }
 
+    // Read-only copy of sriramchandra.org book pages and Peerless Pearls (for the Source bank)
+    if (parts[0] === "src" && req.method === "GET") {
+      const pth = url.searchParams.get("path") || "";
+      if (!/^(Books\/[A-Za-z0-9]+\/[A-Za-z0-9]+chap_\d{1,3}\.htm|PeerlessPearls\/[A-Za-z]{3}\.htm)$/.test(pth)) return json({ error: "bad path" }, 400);
+      const ck = "src/" + pth.toLowerCase();
+      const cached = await s.get(ck, { type: "json" });
+      const html200 = (h) => new Response(h, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+      if (cached && Date.now() - cached.at < 7 * 864e5) return html200(cached.html);
+      const r = await fetch("http://www.sriramchandra.org/" + pth, { headers: { "user-agent": "Mozilla/5.0 (DailyQuoteCards)" } });
+      if (!r.ok) return json({ error: `sriramchandra.org returned ${r.status}` }, r.status === 404 ? 404 : 502);
+      const html = new TextDecoder("windows-1252").decode(await r.arrayBuffer());
+      await s.setJSON(ck, { at: Date.now(), html });
+      return html200(html);
+    }
+
     if (parts[0] === "log") return json({ log: (await s.get("log", { type: "json" })) || [] });
 
     // Connect Facebook Page + Instagram
