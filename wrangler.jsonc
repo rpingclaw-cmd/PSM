@@ -1,0 +1,12 @@
+{
+  // Cloudflare settings for Daily Quote Cards
+  "name": "daily-quote-cards",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "kv_namespaces": [
+    { "binding": "QUOTES", "id": "7d3b741fda644d1f8e2e1ed539b0cc7d" }
+  ],
+  "triggers": { "crons": ["*/10 * * * *"] },
+  "observability": { "enabled": true }
+}
