@@ -17,7 +17,7 @@ exact clicks, never leave them with half-finished state. Spiritual content: quot
 
 ## Repo layout & build (IMPORTANT)
 - **Edit `src/`, never hand-edit `public/index.html`.** Then run `python3 tools/build.py` (assembles the single-file app:
-  head + CSS + embedded fonts + body + JS in order pre.js → themes2.js → draw.js → post.js → engine.js → studio2.js → studio3.js → studio4.js).
+  head + CSS + embedded fonts + body + JS in order pre.js → themes2.js → draw.js → post.js → engine.js → studio2.js → studio3.js → studio4.js → editor.js).
 - `netlify/functions/api.mjs`, `netlify/functions/autopost.mjs`, `netlify/lib/shared.mjs` = server logic (shared by all hosts).
 - After any server change, rebuild the Worker bundle (committed file):
   `npx esbuild cloudflare/entry.mjs --bundle --format=esm --platform=neutral --target=es2022 --outfile=cloudflare/worker.js --alias:@netlify/blobs=./cloudflare/kvstore.mjs`
@@ -33,7 +33,7 @@ exact clicks, never leave them with half-finished state. Spiritual content: quot
   thumbs, render (pieces with framing / punch-ins / covers + dissolves, then QC: lip sync at 3 points, loudness,
   black/frozen picture, captions; exports VTT, FCPXML, EDL, project). Steps are resumable (`*.done.json` next to
   outputs in `studio_work/`). Browser side: `src/engine.js` (connection, jobs), `src/studio2.js` (transcript
-  line-up, sound map, chapters), `src/studio3.js` (picture, covers, word captions), `src/studio4.js` (YouTube, thumbs). Owner installs with `engine/install.ps1` (Windows) / `engine/install.sh` (Mac), which download
+  line-up, sound map, chapters), `src/studio3.js` (picture, covers, word captions), `src/studio4.js` (YouTube, thumbs). `src/editor.js` = full-screen DaVinci Resolve-style editor (timeline canvas, Media/Edit/Color/Fairlight/Deliver pages; it moves the guided fieldsets into its panels and back; hand cuts = `STU.manualCuts` used by `keepSegments`, blade points = `STU.splits`, undo/redo wraps `stuSave`). Owner installs with `engine/install.ps1` (Windows) / `engine/install.sh` (Mac), which download
   the engine from this repo's `main` branch — so engine changes reach the owner when they re-run the installer.
 - Tests: `cd engine && STUDIO_DEEP_FILTER=/path/to/deep-filter STUDIO_TEST_FACE=/path/face.jpg uv run pytest -q tests`
   (synthetic media + espeak-ng voice with a known answer; sync and lip sync < 5 ms; face tests skip without a face photo),

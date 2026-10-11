@@ -66,6 +66,37 @@ Your video never leaves your computer.
 If anything is interrupted (laptop closed, power cut), start the engine again and press **Resume**
 on the job — finished parts are kept.
 
+## 4. The Editor (looks and works like DaVinci Resolve)
+
+At the top of the Studio tab, click **🎬 Open the Editor**. It fills the screen in a dark layout: the
+video in the middle, panels on the left and right, the **timeline** at the bottom, and the pages along
+the very bottom — **Media · Edit · Color · Fairlight · Deliver**. It is the same project as the steps
+above; **Guided view** (top right) takes you back to them. Everything is saved as you go.
+
+| Page | What you do there |
+|---|---|
+| Media | Choose your video and recorder audio, prepare them, sync them |
+| Edit | Transcript on the left, Inspector and Reels/chapters on the right, cut on the timeline |
+| Color | Picture panel (framing, colour, covers) with a live preview and a brightness **waveform / RGB parade** scope |
+| Fairlight | Sound cleanup, with a large voice waveform (yellow marks = breaths) |
+| Deliver | Make the final files, YouTube package, job progress |
+
+Timeline tracks: **V2** covers, **V1** video, **A1** voice (waveform), **ST** subtitles. Blue flags in the
+ruler are markers (they become YouTube chapters); pink bars are Reels.
+
+Editing on the timeline:
+- **Cut a piece out:** put the playhead at the start, press **Ctrl+B**; at the end, **Ctrl+B** again; click the
+  piece in between and press **Delete**. The rest moves up to close the gap (a "ripple delete").
+- **Or with In/Out:** press **I** at the start and **O** at the end, then **Delete**.
+- **Trim:** drag the left or right edge of a clip. Dragging outwards brings back what was cut there.
+- **Words:** select words in the transcript and press **Delete** to cut them.
+- **Undo / redo:** **Ctrl+Z** / **Ctrl+Shift+Z** (works for every change, also in the panels).
+- Click a clip and use the **Inspector** to set its framing (close-up, wide, hold still), cover it, or make a Reel.
+
+Playing: **Space** play/pause · **J K L** backwards / stop / forwards (press L again for 2× and 4×) ·
+**← →** one frame (with Shift: one second) · **↑ ↓** previous/next cut · **M** marker ·
+**Ctrl + mouse wheel** zoom · **Shift+Z** fit · **Shift+1…5** change page · **?** all shortcuts.
+
 ## Free tools used (all open source)
 
 | Tool | What for | Licence |

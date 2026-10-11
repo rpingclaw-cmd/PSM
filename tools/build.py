@@ -6,6 +6,6 @@ S = R / "src"
 rd = lambda p: (S / p).read_text(encoding="utf-8")
 style = rd("style.css").replace("</style>", rd("extra.css") + "\n" + rd("fonts/embedded.css") + "\n" + rd("fonts/extra_fonts.css") + "\n</style>")
 html = (rd("head.html") + style + "\n</head>\n<body>\n" + rd("body.html").replace("<h1>Samadristi quote cards</h1>", "<h1>Daily quote cards</h1>")
-        + "\n<script>\n" + rd("pre.js") + "\n" + rd("themes2.js") + "\n" + rd("draw.js") + "\n" + rd("post.js") + "\n" + rd("engine.js") + "\n" + rd("studio2.js") + "\n" + rd("studio3.js") + "\n" + rd("studio4.js") + "\n</script>\n</body>\n</html>\n")
+        + "\n<script>\n" + rd("pre.js") + "\n" + rd("themes2.js") + "\n" + rd("draw.js") + "\n" + rd("post.js") + "\n" + rd("engine.js") + "\n" + rd("studio2.js") + "\n" + rd("studio3.js") + "\n" + rd("studio4.js") + "\n" + rd("editor.js") + "\n</script>\n</body>\n</html>\n")
 (R / "public" / "index.html").write_text(html, encoding="utf-8")
 print(f"built public/index.html ({len(html.encode()):,} bytes)")

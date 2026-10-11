@@ -186,6 +186,38 @@ try:
         assert td == "1280,720", td
         page.locator("#stuYouTube").scroll_into_view_if_needed()
         shot(page, "06f-youtube-thumbnail")
+        # 6g. the DaVinci Resolve-style editor: blade two cuts, ripple delete the piece, undo/redo, pages, keys
+        page.click("#edOpen")
+        page.wait_for_selector("#ed:not([hidden])")
+        assert page.evaluate("document.querySelector('#edScreen #stuVideo')!==null")
+        time.sleep(0.5)
+        shot(page, "06g-editor-edit")
+        tot0 = page.evaluate("edModel().total")
+        page.evaluate("document.activeElement.blur();edSeek(edToEd(62))"); page.keyboard.press("Control+b")
+        page.evaluate("edSeek(edToEd(66))"); page.keyboard.press("Control+b")
+        cx = page.evaluate("(()=>{const r=document.querySelector('#edCanvas').getBoundingClientRect();return r.left+edX(edToEd(64))})()")
+        cy = page.evaluate("document.querySelector('#edCanvas').getBoundingClientRect().top") + 30 + 26 + 20  # ruler + V2 + into V1
+        page.mouse.click(cx, cy)
+        assert page.evaluate("ED.sel&&ED.sel.type") == "clip", page.evaluate("ED.sel")
+        page.keyboard.press("Delete")
+        cut = tot0 - page.evaluate("edModel().total")
+        assert 3.5 < cut < 4.5, cut  # (word-level snapping can move the edges a little)
+        has64 = "keepSegments().some(([s,e])=>s<64&&e>64)"
+        assert not page.evaluate(has64)
+        page.keyboard.press("Control+z"); assert page.evaluate(has64), "undo brings it back"
+        page.keyboard.press("Control+Shift+z"); assert not page.evaluate(has64), "redo removes it again"
+        nch = page.evaluate("STU.chapters.length"); page.keyboard.press("m"); assert page.evaluate("STU.chapters.length") == nch + 1
+        page.keyboard.press("Control+z"); assert page.evaluate("STU.chapters.length") == nch
+        shot(page, "06h-editor-cut")
+        for pg, where in (("media", "#edLeft #stuStep1"), ("color", "#edRight #stuPicture"), ("fairlight", "#edLeft #stuSound"), ("deliver", "#edLeft #stuStep10")):
+            page.click(f"#ed [data-edpage={pg}]")
+            assert page.evaluate(f"document.querySelector('{where}')!==null"), where
+            time.sleep(0.4); shot(page, f"06i-editor-{pg}")
+        page.click("#edClose")
+        order = page.evaluate("[...document.querySelectorAll('#pane-studio > fieldset')].map(f=>f.id).join(',')")
+        assert order == "engBox,stuStep1,stuStep2,stuStep3,stuSound,stuStep5,stuStep6,stuStep7,stuPicture,stuYouTube,stuStep10", order
+        assert page.evaluate("document.querySelector('#stuStep6 #stuVideo')!==null && document.querySelector('#stuVideo').controls")
+        edited_s, nparts = page.evaluate("[edModel().total, keepSegments().length]")
         # 7. render (edited by text, with cross-fades) + quality check
         page.locator("#engRenderBox").scroll_into_view_if_needed()
         page.select_option("#stu_res", "1080")
@@ -208,6 +240,8 @@ try:
         import subprocess as sp
         dims = sp.run(["ffprobe","-v","error","-select_streams","v:0","-show_entries","stream=width,height","-of","csv=p=0",str(out_dir/"Edited - full video.mp4")],capture_output=True,text=True).stdout.strip()
         assert dims == "1920,1080", dims
+        fd = float(sp.run(["ffprobe","-v","error","-show_entries","format=duration","-of","csv=p=0",str(out_dir/"Edited - full video.mp4")],capture_output=True,text=True).stdout)
+        assert abs(fd - edited_s) < 0.1 + 0.034 * nparts, (fd, edited_s, nparts)  # the editor's hand cut is in the final video
         reel = out_dir / "Reel 01 - The heart.mp4"
         rd = sp.run(["ffprobe","-v","error","-select_streams","v:0","-show_entries","stream=width,height","-of","csv=p=0",str(reel)],capture_output=True,text=True).stdout.strip()
         assert rd == "720,1280", rd

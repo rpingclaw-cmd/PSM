@@ -1622,6 +1622,7 @@ function keepSegments(){
   const gapMid=(i)=>{const p=W[i-1],n=W[i];return p?q(Math.min(p.e,n.s),Math.max(p.e,n.s)):Math.max(0,n.s-0.15)};
   for(let i=0;i<W.length;i++){if(!STU.removed[i])continue;let j=i;while(j+1<W.length&&STU.removed[j+1])j++;
     const s=i>0?Math.min(gapMid(i),W[i].s):Math.max(0,W[i].s-0.1),e=j+1<W.length?Math.max(q(Math.min(W[j].e,W[j+1].s),Math.max(W[j].e,W[j+1].s)),W[j].e):Math.min(D,W[j].e+0.15);cuts.push([s,e]);i=j}
+  for(const c of STU.manualCuts||[])if(c[1]>c[0])cuts.push([Math.max(0,c[0]),Math.min(D,c[1])]);  // cut by hand in the Editor's timeline
   if(STU.settings.pauses&&typeof ANA!=='undefined'&&ANA)cuts.push(...anaPauseCuts(Math.max(0.4,+STU.settings.maxPause||1),STU.settings.keepBreaths!==false));
   else if(STU.settings.pauses){const mp=Math.max(0.4,+STU.settings.maxPause||1);let prev=null;
     for(let i=0;i<W.length;i++){if(STU.removed[i])continue;if(prev!==null){const g=W[i].s-W[prev].e;if(g>mp)cuts.push([W[prev].e+mp/2,W[i].s-mp/2])}prev=i}}
@@ -1886,7 +1887,7 @@ ${text}`;
     stuSave();stuStats();stuSay('#stuReelStatus',`Added ${added} reel suggestion${added===1?'':'s'} (with ${PROVIDERS[got.pid].label}). Play them, rename or remove any.`);
   }catch(e){stuSay('#stuReelStatus',errMsg(e))}
 }
-(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init();picInit();stage4Init()})();
+(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init();picInit();stage4Init();edInit()})();
 
 
 /* ---------- Google account sign-in & synced keys ---------- */

@@ -251,6 +251,7 @@
     <!-- STUDIO -->
     <div class="pane" id="pane-studio">
       <p class="note">Edit long talks and podcasts: clean the sound, sync a separate recorder with the video, edit by deleting words in the transcript, and make Reels. Your big video file never leaves your computer — the final 4K video is made on your computer by the free tool <strong>ffmpeg</strong>, using the files this page gives you.</p>
+      <div class="ed-openbar"><button class="btn primary" id="edOpen">🎬 Open the Editor</button><span class="hint" style="margin:0">A full-screen editing room laid out like DaVinci Resolve: timeline, viewer, and Media · Edit · Color · Fairlight · Deliver pages. Same project as the steps below.</span></div>
       <details id="stuFfmpegHelp" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:500">Install ffmpeg (once, about 5 minutes)</summary>
         <div class="hint" style="margin-top:8px"><strong>Windows:</strong> click Start, type <code>cmd</code>, open Command Prompt, paste <code>winget install Gyan.FFmpeg</code> and press Enter. Close and reopen any open windows afterwards.<br>
         <strong>Mac:</strong> open Terminal and paste <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>, press Enter and follow it; then paste <code>brew install ffmpeg</code>.<br>
@@ -276,7 +277,7 @@
         </div>
       </fieldset>
 
-      <fieldset><legend>1 · Your files</legend>
+      <fieldset id="stuStep1"><legend>1 · Your files</legend>
         <label class="check"><input type="checkbox" id="stu_separate"> I recorded the audio separately (recorder or microphone)</label>
         <div id="engFiles" hidden>
           <div class="eng-file"><button class="btn small" id="engPickVideo">Choose video…</button><span id="engVideoPath" class="status">No video chosen</span></div>
@@ -303,7 +304,7 @@
         <p class="status" id="stuLoadStatus"></p>
       </fieldset>
 
-      <fieldset><legend>3 · Sync audio and video</legend>
+      <fieldset id="stuStep3"><legend>3 · Sync audio and video</legend>
         <div class="under" style="margin:0 0 6px"><button class="btn small primary" id="stuSync">Find sync automatically</button></div>
         <p class="status" id="stuSyncOut"></p>
         <label class="f" style="max-width:280px"><span>Offset in milliseconds (adjust if lips look early/late)</span><input type="number" id="stuOffset" step="10"></label>
@@ -334,7 +335,7 @@
         </div>
       </fieldset>
 
-      <fieldset><legend>5 · Transcribe</legend>
+      <fieldset id="stuStep5"><legend>5 · Transcribe</legend>
         <div class="row">
           <label class="f"><span>Language</span><select id="stu_lang"><option value="">Detect automatically</option><option value="en">English</option><option value="hi">Hindi</option><option value="te">Telugu</option><option value="ta">Tamil</option><option value="kn">Kannada</option></select></label>
           <div class="under" style="align-self:end;margin:0 0 12px"><button class="btn small primary" id="stuTranscribe">Transcribe</button><button class="btn small" id="stuStop">Stop</button></div>
@@ -349,8 +350,8 @@
         </details>
       </fieldset>
 
-      <fieldset><legend>6 · Edit by text</legend>
-        <video id="stuVideo" controls playsinline style="width:100%;max-height:52vh;background:#000;border-radius:8px"></video>
+      <fieldset id="stuStep6"><legend>6 · Edit by text</legend>
+        <video id="stuVideo" controls playsinline crossorigin="anonymous" style="width:100%;max-height:52vh;background:#000;border-radius:8px"></video>
         <label class="check" style="margin-top:6px"><input type="checkbox" id="stuPlayEdited"> Play edited version (skips the cut parts)</label>
         <div class="under" style="margin:6px 0 8px">
           <button class="btn small primary" id="stuCut">✂ Cut selected words</button>
@@ -375,7 +376,7 @@
         <div id="stuText" class="stu-text"></div>
       </fieldset>
 
-      <fieldset><legend>7 · Reels &amp; chapters</legend>
+      <fieldset id="stuStep7"><legend>7 · Reels &amp; chapters</legend>
         <div class="row">
           <label class="f"><span>How many suggestions</span><input type="number" id="stuReelCount" min="1" max="15" value="5"></label>
           <div class="under" style="align-self:end;margin:0 0 12px"><button class="btn small primary" id="stuSuggest">✨ Suggest best moments (AI)</button></div>
@@ -450,7 +451,7 @@
         </div>
       </fieldset>
 
-      <fieldset><legend>10 · Make the final files</legend>
+      <fieldset id="stuStep10"><legend>10 · Make the final files</legend>
         <div class="row">
           <label class="f"><span>Sound cleanup</span><select id="stu_clean"><option value="light">Light — keep it natural</option><option value="standard">Standard — podcast clarity (recommended)</option><option value="strong">Strong — noisy room (AI noise removal)</option><option value="none">Loudness only</option></select></label>
           <label class="f"><span>Full video size</span><select id="stu_res"><option value="1080">1080p (recommended)</option><option value="1440">1440p</option><option value="2160">4K (enlarged from the phone picture, slow)</option><option value="orig">Original size</option></select></label>
