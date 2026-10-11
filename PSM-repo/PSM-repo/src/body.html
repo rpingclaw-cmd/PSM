@@ -1,0 +1,487 @@
+<header class="top">
+  <h1>Samadristi quote cards</h1>
+  <span class="status" id="saveStatus">Loading…</span>
+</header>
+
+<div class="layout">
+  <section class="stage" aria-label="Card preview">
+    <canvas id="preview" width="1284" height="842" aria-label="Quote card preview"></canvas>
+    <div class="under">
+      <div class="chips" id="formatChips" role="group" aria-label="Card size"></div>
+    </div>
+    <div class="under">
+      <button class="btn primary" id="saveDayBtn">Save card</button>
+      <button class="btn" id="downloadBtn">Download PNG</button>
+      <button class="btn" id="shareBtn" hidden>Share</button>
+      <button class="btn" id="reelBtn">Make Reel video</button>
+      <span class="spacer"></span>
+      <span class="status" id="cardNote"></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="today" aria-selected="true">Today</button>
+      <button role="tab" data-tab="card" aria-selected="false">Card</button>
+      <button role="tab" data-tab="month" aria-selected="false">Month</button>
+      <button role="tab" data-tab="library" aria-selected="false">Library</button>
+      <button role="tab" data-tab="find" aria-selected="false">Find quotes</button>
+      <button role="tab" data-tab="bank" aria-selected="false">Source bank</button>
+      <button role="tab" data-tab="studio" aria-selected="false">Studio</button>
+      <button role="tab" data-tab="auto" aria-selected="false">Autopilot</button>
+      <button role="tab" data-tab="setup" aria-selected="false">Setup</button>
+    </nav>
+
+    <!-- TODAY -->
+    <div class="pane on" id="pane-today">
+      <div class="under" style="margin:0 0 12px">
+        <button class="btn small" id="todayPrev" aria-label="Previous day">‹</button>
+        <strong id="todayLabel" style="flex:1;text-align:center;font-weight:500"></strong>
+        <button class="btn small" id="todayNext" aria-label="Next day">›</button>
+      </div>
+      <div class="under" style="margin:0 0 12px"><button class="btn small" id="todayNow">Go to today</button><button class="btn small" id="icsBtn">Add daily reminders to my calendar</button></div>
+      <p class="status" id="todayStatus" role="status"></p>
+      <div id="todayList"></div>
+    </div>
+
+    <!-- CARD -->
+    <div class="pane" id="pane-card">
+      <fieldset>
+        <legend>Day</legend>
+        <div class="row">
+          <label class="f"><span>Date</span><input type="date" data-k="date" id="cardDate"></label>
+          <label class="f"><span>Post time</span><select data-k="slot" id="slotSelect"></select></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Header left</span><input data-k="headerL" placeholder="auto"></label>
+          <label class="f"><span>Header right</span><input data-k="headerR" placeholder="auto"></label>
+        </div>
+        <p class="hint" id="autoHeader"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Quote</legend>
+        <label class="f"><span>Quote text (exactly as in the book)</span><textarea data-k="text" rows="4"></textarea></label>
+        <label class="f"><span>Citation</span><input data-k="cite" placeholder="(Basic Writings of Sri Ramchandra - pg 162)"></label>
+        <div class="row">
+          <label class="f"><span>Master</span><select data-k="master" id="masterSelect"></select></label>
+          <label class="f"><span>Citation size</span>
+            <select data-k="citeStyle"><option value="small">Small, below</option><option value="inline">Same size as quote</option></select></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Photo</legend>
+        <div class="strip" id="photoStrip" role="group" aria-label="Choose photo"></div>
+        <div class="row">
+          <label class="f"><span>Position</span>
+            <select data-k="photoSide"><option value="left">Left</option><option value="right">Right</option></select></label>
+          <label class="f"><span>Edge</span>
+            <select data-k="shape"><option value="soft">Soft rectangle</option><option value="oval">Oval with halo</option><option value="cutout">Corner fade</option><option value="rect">Sharp</option></select></label>
+        </div>
+        <label class="check"><input type="checkbox" data-k="gray"> Black &amp; white</label>
+        <label class="f"><span>Zoom</span><input type="range" min="1" max="2.5" step="0.02" data-k="zoom"></label>
+        <div class="row">
+          <label class="f"><span>Move left / right</span><input type="range" min="-1" max="1" step="0.02" data-k="ox"></label>
+          <label class="f"><span>Move up / down</span><input type="range" min="-1" max="1" step="0.02" data-k="oy"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Look</legend>
+        <div class="swatches" id="themeSwatches" role="group" aria-label="Background"></div>
+        <button class="btn small" id="surpriseBtn" style="margin-bottom:14px">Surprise me — new look</button>
+        <div class="row">
+          <label class="f"><span>Layout</span>
+            <select data-k="layout"><option value="classic">Classic — header bar</option><option value="modern">Modern — name &amp; website</option></select></label>
+          <label class="f"><span>Quote font</span>
+            <select data-k="font"><option value="montserrat">Montserrat</option><option value="dmsans">DM Sans</option><option value="cormorant">Cormorant</option><option value="lora">Lora</option></select></label>
+        </div>
+        <label class="f"><span>Text size</span><input type="range" min="0.6" max="1.5" step="0.02" data-k="size"></label>
+        <label class="f"><span>Line spacing</span><input type="range" min="0.75" max="1.35" step="0.01" data-k="lh"></label>
+        <div class="row">
+          <label class="f"><span>Text alignment</span>
+            <select data-k="align"><option value="auto">Auto</option><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
+          <label class="f"><span>Header wording</span>
+            <select data-k="dash"><option value="dash">Samadristi – 17</option><option value="plain">Samadristi 17</option><option value="dot">Samadristi · 17</option><option value="comma">Samadristi, 17</option><option value="dayfirst">17 Samadristi</option></select></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Header font</span>
+            <select data-k="headerFont"><option value="auto">Automatic</option>
+              <optgroup label="Handwriting"><option value="script">Parisienne (classic)</option><option value="greatvibes">Great Vibes</option><option value="allura">Allura</option><option value="pinyon">Pinyon Script</option><option value="alexbrush">Alex Brush</option><option value="tangerine">Tangerine</option><option value="dancing">Dancing Script</option><option value="satisfy">Satisfy</option></optgroup>
+              <optgroup label="Elegant"><option value="serif">Cormorant italic</option><option value="playfair">Playfair italic</option><option value="lora">Lora italic</option><option value="cinzel">Cinzel (engraved capitals)</option><option value="marcellus">Marcellus</option></optgroup>
+              <optgroup label="Modern"><option value="sans">Montserrat</option><option value="caps">CAPITALS, spaced</option></optgroup></select></label>
+          <label class="f"><span>Header background</span>
+            <select data-k="headerBar"><option value="auto">Automatic</option><option value="bar">Frosted bar</option><option value="line">Thin underline</option><option value="none">None</option></select></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Header size</span><input type="range" min="0.6" max="1.6" step="0.02" data-k="headerSize"></label>
+          <label class="f"><span>Header colour</span><input type="color" data-k="headerColor" style="height:40px;padding:4px"></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Master's name size</span><input type="range" min="0.5" max="2" step="0.02" data-k="nameSize"></label>
+          <label class="f"><span>Name colour</span><input type="color" data-k="nameColor" style="height:40px;padding:4px"></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Website size</span><input type="range" min="0.6" max="2.2" step="0.02" data-k="siteSize"></label>
+          <label class="f"><span>Website colour</span><input type="color" data-k="siteColor" style="height:40px;padding:4px"></label>
+        </div>
+        <label class="check"><input type="checkbox" data-k="showName"> Show master's name</label>
+        <label class="check"><input type="checkbox" data-k="showSite"> Show website</label>
+        <button class="btn small" id="useLookBtn">Use this look for new cards at this post time</button>
+      </fieldset>
+    </div>
+
+    <!-- MONTH -->
+    <div class="pane" id="pane-month">
+      <div class="row">
+        <label class="f"><span>Month</span><input type="month" id="monthPick"></label>
+        <label class="f"><span>When filling, backgrounds</span>
+          <select id="fillThemes"><option value="rotate">Rotate all</option><option value="same">Keep current card's</option></select></label>
+      </div>
+      <div class="under" style="margin:0 0 12px">
+        <button class="btn" id="fillBtn">Fill empty days from library</button>
+        <button class="btn" id="shuffleBtn">Shuffle looks &amp; photos</button>
+        <button class="btn primary" id="zipBtn">Download month (.zip)</button>
+      </div>
+      <label class="check"><input type="checkbox" id="zipStories"> Also include Story-size versions in the zip</label>
+      <p class="status" id="monthStatus"></p>
+      <div id="monthList"></div>
+    </div>
+
+    <!-- LIBRARY -->
+    <div class="pane" id="pane-library">
+      <label class="f"><span>Search</span><input id="libSearch" placeholder="Word, book or master"></label>
+      <details style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:500">Add a quote by hand</summary>
+        <div style="padding-top:10px">
+          <label class="f"><span>Quote</span><textarea id="newText" rows="3"></textarea></label>
+          <label class="f"><span>Citation</span><input id="newCite" placeholder="(Showers of Divine Grace - pg 37)"></label>
+          <label class="f"><span>Master</span><select id="newMaster" class="masterOpts"></select></label>
+          <button class="btn primary small" id="addQuoteBtn">Add to library</button>
+        </div>
+      </details>
+      <button class="btn small" id="libXlsx" style="margin-bottom:10px">Download library as Excel</button>
+      <p class="status" id="libCount"></p>
+      <div id="libList"></div>
+    </div>
+
+    <!-- FIND -->
+    <div class="pane" id="pane-find">
+      <p class="note" id="aiNote">Add books, audio talks, page photos or pasted text below, then press Find quotes. Passages are copied word for word and checked against your source before you add them.</p>
+      <div class="addrow">
+        <label class="btn small">Add books (PDF / text)<input type="file" id="addBooks" class="visually-hidden" multiple accept=".pdf,.txt,.md,application/pdf,text/plain"></label>
+        <label class="btn small">Add audio talks<input type="file" id="addAudio" class="visually-hidden" multiple accept="audio/*,video/mp4,.mp3,.m4a,.wav,.aac,.ogg,.flac,.srt,.vtt"></label>
+        <label class="btn small">Add page photos<input type="file" id="addPhotos" class="visually-hidden" multiple accept="image/*"></label>
+        <button class="btn small" id="addPaste">Paste text</button>
+      </div>
+      <div id="srcList"></div>
+      <div class="row">
+        <label class="f"><span>Quotes per source</span><input type="number" id="howMany" min="1" max="40" value="10"></label>
+        <label class="f"><span>Theme (optional)</span><input id="srcTheme" placeholder="e.g. food, purity, happiness"></label>
+      </div>
+      <div class="under" style="margin:0 0 12px">
+        <button class="btn primary" id="findBtn">Find quotes</button>
+        <button class="btn" id="stopBtn" hidden>Stop</button>
+        <span class="status" id="findStatus"></span>
+      </div>
+      <div id="findResults"></div>
+      <button class="btn primary" id="addFoundBtn" hidden>Add selected to library</button>
+    </div>
+
+    <!-- SOURCE BANK -->
+    <div class="pane" id="pane-bank">
+      <p class="note">Finds <strong>new</strong> quotes straight from the books on sriramchandra.org, skips the 365 already in Peerless Pearls (and anything in your library), and gives you an Excel file where every quote links to the exact passage in the book.</p>
+      <p class="note" id="bankNeed">This needs the server version of the site. Connect first in <strong>Setup → Online sync &amp; autopilot</strong>.</p>
+      <fieldset>
+        <legend>Books</legend>
+        <div id="bankBooks"></div>
+        <details style="margin-top:6px">
+          <summary style="cursor:pointer;font-weight:500">Add another sriramchandra.org book</summary>
+          <p class="hint" style="margin-top:8px">Open the book on sriramchandra.org. The address looks like <code>Books/SS/SSchap_4.htm</code> — the folder is <code>SS</code>.</p>
+          <div class="row3">
+            <label class="f"><span>Folder</span><input id="bankDir" placeholder="SS"></label>
+            <label class="f"><span>First chapter</span><input type="number" id="bankFrom" value="1"></label>
+            <label class="f"><span>Last chapter</span><input type="number" id="bankTo" value="20"></label>
+          </div>
+          <div class="row3">
+            <label class="f"><span>Title</span><input id="bankTitle" placeholder="Silence Speaks"></label>
+            <label class="f"><span>Code</span><input id="bankAbbr" placeholder="SS"></label>
+            <label class="f"><span>Master</span><select id="bankMaster" class="masterOpts"></select></label>
+          </div>
+          <button class="btn small" id="bankAddBook">Add book</button>
+        </details>
+        <details style="margin-top:6px">
+          <summary style="cursor:pointer;font-weight:500">Add your own book (PDF)</summary>
+          <p class="hint" style="margin-top:8px">For books that are not on sriramchandra.org. Quotes get real page numbers from the PDF. The PDF is kept in this browser.</p>
+          <label class="f"><span>PDF file</span><input type="file" id="bankPdfFile" accept="application/pdf,.pdf"></label>
+          <div class="row3">
+            <label class="f"><span>Title</span><input id="bankPdfTitle" placeholder="Basic Writings of Sri Ramchandra"></label>
+            <label class="f"><span>Code</span><input id="bankPdfAbbr" placeholder="BWS"></label>
+            <label class="f"><span>Master</span><select id="bankPdfMaster" class="masterOpts"></select></label>
+          </div>
+          <div class="row">
+            <label class="f"><span>Page offset (printed = PDF page + offset)</span><input type="number" id="bankPdfOffset" value="0"></label>
+            <label class="f"><span>Online link to the book (optional)</span><input id="bankPdfLink" placeholder="https://…"></label>
+          </div>
+          <button class="btn small" id="bankPdfAdd">Add PDF book</button>
+        </details>
+      </fieldset>
+      <div class="row">
+        <label class="f"><span>How many new quotes</span><input type="number" id="bankTarget" min="1" max="2000" value="500"></label>
+        <label class="f"><span>Split between trainers</span><input type="number" id="bankTrainers" min="1" max="20" value="5"></label>
+      </div>
+      <div class="under" style="margin:0 0 8px">
+        <button class="btn primary" id="bankRun">Find new quotes</button>
+        <button class="btn" id="bankStop" hidden>Stop</button>
+      </div>
+      <p class="status" id="bankStatus" role="status"></p>
+      <div class="under" style="margin:0 0 12px">
+        <button class="btn small" id="bankXlsx">Download Excel</button>
+        <button class="btn small" id="bankPages">Match page numbers from PDFs</button>
+        <button class="btn small" id="bankToLib">Add all to library</button>
+        <button class="btn small" id="bankClear">Start over</button>
+        <label class="btn small">Restore from Excel<input type="file" id="bankImport" accept=".xlsx" class="visually-hidden"></label>
+      </div>
+      <p class="hint">It saves as it goes. If the free AI limit is reached, press <strong>Find new quotes</strong> again later — it continues from the next unread chapter.</p>
+      <p class="status" id="bankCount"></p>
+      <div id="bankList"></div>
+    </div>
+
+    <!-- STUDIO -->
+    <div class="pane" id="pane-studio">
+      <p class="note">Edit long talks and podcasts: clean the sound, sync a separate recorder with the video, edit by deleting words in the transcript, and make Reels. Your big video file never leaves your computer — the final 4K video is made on your computer by the free tool <strong>ffmpeg</strong>, using the files this page gives you.</p>
+      <details style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:500">Install ffmpeg (once, about 5 minutes)</summary>
+        <div class="hint" style="margin-top:8px"><strong>Windows:</strong> click Start, type <code>cmd</code>, open Command Prompt, paste <code>winget install Gyan.FFmpeg</code> and press Enter. Close and reopen any open windows afterwards.<br>
+        <strong>Mac:</strong> open Terminal and paste <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>, press Enter and follow it; then paste <code>brew install ffmpeg</code>.<br>
+        Check: type <code>ffmpeg -version</code> — it should print a version number.</div></details>
+
+      <fieldset><legend>1 · Your files</legend>
+        <label class="f"><span>Video (stays on your computer — nothing is uploaded)</span><input type="file" id="stuVideoFile" accept="video/*,.mov,.mp4,.mkv"></label>
+        <label class="check"><input type="checkbox" id="stu_separate"> I recorded the audio separately (recorder or microphone)</label>
+        <label class="f" id="stuAudioRow"><span>Separate audio</span><input type="file" id="stuAudioFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.flac"></label>
+        <label class="check"><input type="checkbox" id="stu_proxy"> Also make a small preview copy (only if your browser cannot play the original video)</label>
+        <div class="under" style="margin:4px 0 6px"><button class="btn small primary" id="stuPrepWin">Download prepare file — Windows</button><button class="btn small" id="stuPrepMac">— Mac</button></div>
+        <p class="hint">Unzip it into the same folder as your video, run it, then come back here.</p>
+        <p class="status" id="stuPrepStatus"></p>
+        <p class="status" id="stuInfo"></p>
+      </fieldset>
+
+      <fieldset><legend>2 · Load prepared files</legend>
+        <label class="btn small" style="display:inline-block">Load prepared files (select everything in studio_out)<input type="file" id="stuLoad" multiple accept=".wav,.json,.mp4" class="visually-hidden"></label>
+        <p class="status" id="stuLoadStatus"></p>
+      </fieldset>
+
+      <fieldset><legend>3 · Sync audio and video</legend>
+        <div class="under" style="margin:0 0 6px"><button class="btn small primary" id="stuSync">Find sync automatically</button></div>
+        <p class="status" id="stuSyncOut"></p>
+        <label class="f" style="max-width:280px"><span>Offset in milliseconds (adjust if lips look early/late)</span><input type="number" id="stuOffset" step="10"></label>
+      </fieldset>
+
+      <fieldset><legend>4 · Transcribe</legend>
+        <div class="row">
+          <label class="f"><span>Language</span><select id="stu_lang"><option value="">Detect automatically</option><option value="en">English</option><option value="hi">Hindi</option><option value="te">Telugu</option><option value="ta">Tamil</option><option value="kn">Kannada</option></select></label>
+          <div class="under" style="align-self:end;margin:0 0 12px"><button class="btn small primary" id="stuTranscribe">Transcribe</button><button class="btn small" id="stuStop">Stop</button></div>
+        </div>
+        <p class="hint">Uses your free Groq key (best word timing), or Gemini as a backup.</p>
+        <p class="status" id="stuTxStatus"></p>
+      </fieldset>
+
+      <fieldset><legend>5 · Edit by text</legend>
+        <video id="stuVideo" controls playsinline style="width:100%;max-height:52vh;background:#000;border-radius:8px"></video>
+        <label class="check" style="margin-top:6px"><input type="checkbox" id="stuPlayEdited"> Play edited version (skips the cut parts)</label>
+        <div class="under" style="margin:6px 0 8px">
+          <button class="btn small primary" id="stuCut">✂ Cut selected words</button>
+          <button class="btn small" id="stuRestore">Restore selected</button>
+          <button class="btn small" id="stuMakeReel">＋ Make Reel from selection</button>
+        </div>
+        <div class="row3">
+          <label class="check"><input type="checkbox" id="stu_fillers"> Remove “um / uh”</label>
+          <label class="check"><input type="checkbox" id="stu_pauses"> Shorten long pauses</label>
+          <label class="check"><input type="checkbox" id="stu_trimEnds"> Trim silence at start/end</label>
+        </div>
+        <label class="f" style="max-width:280px"><span>Longest pause to keep (seconds)</span><input type="number" id="stu_maxPause" min="0.4" max="5" step="0.1"></label>
+        <p class="hint">Select words with your mouse, then press Cut. Click a word to jump the video there.</p>
+        <p class="status" id="stuStats"></p>
+        <div id="stuText" class="stu-text"></div>
+      </fieldset>
+
+      <fieldset><legend>6 · Reels</legend>
+        <div class="row">
+          <label class="f"><span>How many suggestions</span><input type="number" id="stuReelCount" min="1" max="15" value="5"></label>
+          <div class="under" style="align-self:end;margin:0 0 12px"><button class="btn small primary" id="stuSuggest">✨ Suggest best moments (AI)</button></div>
+        </div>
+        <p class="status" id="stuReelStatus"></p>
+        <div id="stuReels"></div>
+      </fieldset>
+
+      <fieldset><legend>7 · Make the final files</legend>
+        <div class="row">
+          <label class="f"><span>Sound cleanup</span><select id="stu_clean"><option value="light">Light — keep it natural</option><option value="standard">Standard — podcast clarity (recommended)</option><option value="strong">Strong — noisy room (AI noise removal)</option><option value="none">Loudness only</option></select></label>
+          <label class="f"><span>Full video size</span><select id="stu_res"><option value="orig">Original (4K)</option><option value="1440">1440p</option><option value="1080">1080p (faster, smaller)</option></select></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Speed</span><select id="stu_enc"><option value="cpu">Normal (works on every computer)</option><option value="mac">Fast — Mac</option><option value="nvidia">Fast — NVIDIA graphics</option><option value="intel">Fast — Intel graphics</option><option value="amd">Fast — AMD graphics</option></select></label>
+          <label class="f"><span>Reel size</span><select id="stu_reelRes"><option value="1080">1080 × 1920 (best for Instagram)</option><option value="720">720 × 1280 (smaller)</option></select></label>
+        </div>
+        <label class="check"><input type="checkbox" id="stu_reelCaps"> Burn captions into Reels</label>
+        <div class="under" style="margin:8px 0"><button class="btn primary" id="stuRenderWin">Download render file — Windows</button><button class="btn" id="stuRenderMac">— Mac</button></div>
+        <p class="hint">Unzip into the video's folder and run it. You get: <em>Edited - full video.mp4</em>, <em>Edited - full audio.mp3</em> (podcast), captions (.srt) and each Reel. A 1-hour 4K video takes roughly 30–90 minutes; each Reel 1–3 minutes.</p>
+        <div class="under"><button class="btn small" id="stuSrt">Captions (.srt)</button><button class="btn small" id="stuCsv">Cut list (.csv)</button><button class="btn small" id="stuText2">Edited transcript (.txt)</button><button class="btn small" id="stuSaveProj">Save project</button><label class="btn small">Open project<input type="file" id="stuLoadProj" accept=".json" class="visually-hidden"></label></div>
+      </fieldset>
+    </div>
+
+    <!-- AUTOPILOT -->
+    <div class="pane" id="pane-auto">
+      <div id="autoNeed" class="note">Autopilot posts your cards to Instagram and Facebook automatically. It needs the server version of this site and your Facebook Page connected — set both up in <strong>Setup → Online sync &amp; autopilot</strong>. WhatsApp stays on the Share button in Today.</div>
+      <div id="autoMain" hidden>
+        <fieldset>
+          <legend>Schedule posts</legend>
+          <div class="row">
+            <label class="f"><span>Days ahead (from today)</span><input type="number" id="autoDays" min="1" max="62" value="14"></label>
+            <div><span class="status" style="display:block;margin-bottom:6px">Post to</span>
+              <label class="check"><input type="checkbox" id="autoFb" checked> Facebook Page</label>
+              <label class="check"><input type="checkbox" id="autoIg" checked> Instagram</label></div>
+          </div>
+          <div id="autoSlots"></div>
+          <button class="btn primary" id="autoSend">Send cards to autopilot</button>
+          <p class="hint" style="margin-top:8px">Edited a card after sending it? Send again — it replaces the scheduled one.</p>
+          <p class="status" id="autoStatus" role="status"></p>
+        </fieldset>
+        <fieldset>
+          <legend>Scheduled</legend>
+          <div id="autoList"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Posting log</legend>
+          <button class="btn small" id="autoLogBtn">Show recent posts</button>
+          <div id="autoLog" style="margin-top:8px"></div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- SETUP -->
+    <div class="pane" id="pane-setup">
+      <fieldset>
+        <legend>AI key (free)</legend>
+        <p class="hint">Finding quotes and transcribing audio use Google Gemini. Get a free key at aistudio.google.com (Get API key) and paste it here. It is kept only in this browser. On Google's free tier, what you send may be used to improve Google's products — fine for published books and public talks.</p>
+        <label class="f"><span>Gemini API key</span><input type="password" id="aiKey" autocomplete="off" spellcheck="false"></label>
+        <label class="f"><span>Model</span><input id="aiModel" list="modelList" spellcheck="false"><datalist id="modelList"></datalist></label>
+        <div class="under" style="margin:0 0 6px"><button class="btn small" id="aiTest">Check key</button><span class="status" id="aiStatus"></span></div>
+      </fieldset>
+      <fieldset>
+        <legend>Backup AI keys (free)</legend>
+        <p class="hint">When Gemini hits its free limit, the app automatically switches to the next key here and carries on. Big books are read in parts sized for each service. <strong>Mistral</strong> has the most generous free tier for books; <strong>Groq</strong> (with a q) adds free, fast audio transcription. Keys stay in this browser.</p>
+        <div id="backupKeys"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Account &amp; sync</legend>
+        <div id="acctBox">
+          <p class="hint" id="acctWho" style="margin:0 0 8px"></p>
+          <div id="gsiBtn" style="margin-bottom:8px"></div>
+          <button class="btn small" id="acctOut" hidden>Sign out</button>
+          <p class="status" id="acctStatus"></p>
+        </div>
+        <details style="margin:6px 0 8px"><summary style="cursor:pointer;font-weight:500">Use the app password instead</summary>
+        <label class="f" style="margin-top:8px"><span>App password (owner only)</span><input type="password" id="srvPw" autocomplete="current-password"></label>
+        <div class="under" style="margin:0 0 6px"><button class="btn small" id="srvConnect">Connect</button></div></details>
+        <p class="status" id="srvStatus" role="status"></p>
+        <div id="metaConnected" hidden><button class="btn small" id="metaDisconnect">Disconnect Instagram &amp; Facebook</button></div>
+        <details id="metaForm" style="margin-top:8px">
+          <summary style="cursor:pointer;font-weight:500">Connect Instagram &amp; Facebook</summary>
+          <p class="hint" style="margin-top:8px">Follow README step 4 to get these from developers.facebook.com. They are sent once to your own server; the App Secret is never stored in this browser.</p>
+          <label class="f"><span>Meta App ID</span><input id="metaApp" autocomplete="off"></label>
+          <label class="f"><span>Meta App Secret</span><input id="metaSecret" type="password" autocomplete="off"></label>
+          <label class="f"><span>User access token (from Graph API Explorer)</span><textarea id="metaToken" rows="3" spellcheck="false"></textarea></label>
+          <button class="btn small primary" id="metaConnect">Connect</button>
+          <div id="metaPick" hidden style="margin-top:10px"><label class="f"><span>Facebook Page</span><select id="metaPages"></select></label><button class="btn small" id="metaPickBtn">Use this Page</button></div>
+          <p class="status" id="metaStatus" role="status"></p>
+        </details>
+      </fieldset>
+      <fieldset>
+        <legend>Daily post times</legend>
+        <p class="hint">Each day gets one card per post time. Filling the month takes quotes from the master you choose for each time.</p>
+        <div id="slotList"></div>
+        <button class="btn small" id="addSlotBtn">Add post time</button>
+      </fieldset>
+      <fieldset>
+        <legend>Instagram &amp; Facebook caption</legend>
+        <label class="f"><span>Added after the quote and citation</span><textarea id="igExtra" rows="4"></textarea></label>
+      </fieldset>
+      <fieldset>
+        <legend>Calendar</legend>
+        <label class="f"><span>Card header uses</span>
+          <select id="calMode"><option value="lalaji">Lalaji Era months (automatic)</option><option value="custom">My own periods</option></select></label>
+        <p class="hint" id="calHint">12 months of 30 days, starting January 14. Samavarti, Prabhu, Iswar, Varada and Krishna have 31 days. Today: <strong id="calToday"></strong></p>
+        <div id="periodBox" hidden>
+          <p class="hint">Each period counts up from its start date (day 1) until the next one begins.</p>
+          <div id="periodList"></div>
+          <button class="btn small" id="addPeriodBtn">Add period</button>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Masters &amp; photos</legend>
+        <p class="hint">Add as many photos as you like for each person. The highlighted one is the default; you can pick any of them on each card.</p>
+        <div id="masterList"></div>
+        <button class="btn small" id="addMasterBtn">Add person</button>
+      </fieldset>
+      <fieldset>
+        <legend>Website</legend>
+        <label class="f"><span>Shown on cards</span><input id="siteText"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Backup</legend>
+        <p class="hint">Everything is stored in this browser. Download a backup now and then, and restore it to move to another phone or computer.</p>
+        <div class="under" style="margin:0">
+          <button class="btn small" id="exportBtn">Download backup</button>
+          <label class="btn small">Restore backup<input type="file" accept=".json,application/json" id="importInput" class="visually-hidden"></label>
+        </div>
+      </fieldset>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="box">
+    <p id="modalTitle" style="margin:0 0 10px;font-weight:500">Press and hold the image to save it</p>
+    <img id="modalImg" alt="Finished quote card">
+    <div class="under"><span class="spacer"></span><button class="btn" id="modalClose">Close</button></div>
+  </div>
+</div>
+<input type="file" accept="image/*" id="stripPhotoInput" class="visually-hidden" multiple>
+<div class="modal" id="reelModal" role="dialog" aria-modal="true" aria-labelledby="reelTitle">
+  <div class="box">
+    <p id="reelTitle" style="margin:0 0 12px;font:600 1.2rem 'Cormorant Garamond',Georgia,serif">Reel options</p>
+    <label class="check"><input type="checkbox" id="rShowHeader"> Show the date header (untick for a general Reel)</label>
+    <label class="f"><span>Opening line (optional, shown first)</span><input id="rHook" placeholder="e.g. A thought for today"></label>
+    <div class="row">
+      <label class="f"><span>Music</span><select id="rMusic"></select></label>
+      <label class="f"><span>Length</span><select id="rSeconds"><option value="8">8 seconds</option><option value="10">10 seconds</option><option value="12">12 seconds</option><option value="15">15 seconds</option><option value="20">20 seconds</option><option value="30">30 seconds</option></select></label>
+    </div>
+    <div id="rOwnBox" class="src" hidden>
+      <label class="btn small" style="display:inline-block;margin-bottom:6px">Choose audio file (MP3, M4A, WAV)<input type="file" id="rOwnFile" accept="audio/*" class="visually-hidden"></label>
+      <p class="status" id="rOwnName" style="margin:0 0 8px"></p>
+      <div class="row">
+        <label class="f"><span>Start from (seconds into the song)</span><input type="number" id="rStart" min="0" value="0"></label>
+        <label class="f"><span>Volume</span><input type="range" id="rVolume" min="0.1" max="1.5" step="0.05"></label>
+      </div>
+      <p class="hint">Use only music you have the right to use. Instagram may mute Reels with copyrighted songs.</p>
+    </div>
+    <button class="btn small" id="rPreviewAudio" style="margin-bottom:12px">▶ Listen to the music</button>
+    <div class="row">
+      <label class="f"><span>Text animation</span><select id="rAnim"><option value="lines">Line by line</option><option value="words">Word by word</option><option value="type">Typewriter</option><option value="all">All at once (gentle zoom)</option></select></label>
+      <label class="f"><span>Text size</span><input type="range" id="rTextSize" min="0.7" max="1.4" step="0.02"></label>
+    </div>
+    <label class="f"><span>Closing message (optional, shown at the end)</span><input id="rCta" placeholder="e.g. Learn meditation free — link in bio"></label>
+    <label class="check"><input type="checkbox" id="rMotion"> Slow background zoom</label>
+    <label class="check"><input type="checkbox" id="rSafe"> Keep text clear of Instagram's buttons and caption</label>
+    <div class="under"><button class="btn primary" id="rMake">Make video</button><span class="spacer"></span><button class="btn" id="rCancel">Cancel</button></div>
+  </div>
+</div>
+<div class="modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="box">
+    <p id="mediaTitle" style="margin:0 0 10px;font-weight:500"></p>
+    <div id="mediaBox"></div>
+    <div class="under"><button class="btn primary" id="mediaShare" hidden>Share</button><button class="btn" id="mediaDownload">Download</button><span class="spacer"></span><button class="btn" id="mediaClose">Close</button></div>
+  </div>
+</div>

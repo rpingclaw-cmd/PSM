@@ -1,0 +1,29 @@
+.strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;margin-bottom:12px}
+.strip>button,.strip>label{flex:0 0 auto;width:64px;height:64px;border-radius:10px;border:2px solid var(--line);padding:0;overflow:hidden;background:var(--soft);cursor:pointer;font:inherit;font-size:.72rem;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center}
+.strip>button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.strip img{width:100%;height:100%;object-fit:cover;display:block}
+.gal{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.gal figure{margin:0;width:76px}
+.gal figure img{width:76px;height:76px;object-fit:cover;border-radius:10px;display:block;border:2px solid transparent}
+.gal figure.def img{border-color:var(--accent)}
+.gal figure div{display:flex;gap:4px;margin-top:4px}
+.gal figure button{flex:1;font:inherit;font-size:.7rem;padding:3px 0;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.gal .addph{width:76px;height:76px;border:2px dashed var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:.75rem;color:var(--muted);cursor:pointer}
+.src{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--paper)}
+.src input,.src select,.src textarea{background:var(--panel)}
+.src .top{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:.85rem}
+.src .kind{font-weight:500}
+.group-title{font:600 1.05rem 'Cormorant Garamond',Georgia,serif;margin:14px 0 4px}
+.addrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+
+@media (max-width:979px){body:not([data-tab="card"]) .stage{display:none}}
+
+body[data-tab="studio"] .stage{display:none}
+body[data-tab="studio"] .layout{grid-template-columns:1fr}
+.stu-text{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--paper);line-height:1.9}
+.stu-text p{margin:0 0 10px}
+.stu-w{cursor:pointer;border-radius:3px}
+.stu-w:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.stu-w.cut{text-decoration:line-through;opacity:.42;background:color-mix(in srgb,#c0392b 12%,transparent)}
+.stu-w.filler:not(.cut){text-decoration:underline dotted}
+.stu-time{font-size:.75rem;color:var(--muted);margin-right:4px}
