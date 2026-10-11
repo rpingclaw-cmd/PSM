@@ -196,3 +196,25 @@ def test_opens_in_google_chrome(tmp_path, monkeypatch):
         monkeypatch.setenv(k, str(tmp_path / "none"))
     server.open_site("https://example/#engine=y")
     assert calls[-1] == ("default", "https://example/#engine=y")
+
+
+def test_fastest_decoder_is_measured_once(eng, media, monkeypatch):
+    """On Windows the engine times Quick Sync / D3D11 / DXVA2 / processor on the real video and remembers the
+    winner. (Here the graphics-chip ones are not available, so the processor must be chosen.)"""
+    from studio_engine import config, media as M
+    monkeypatch.setitem(M.DECODERS, "other", M.DECODERS["win"])  # the Windows choices (none exist on this test machine)
+
+    class FakeCtx:
+        logs = []
+        def check(self): pass
+        def progress(self, *a): pass
+        def log(self, t): self.logs.append(t)
+    st = config.load_settings(); st.pop("decoders", None); config.save_settings(st)
+    ctx = FakeCtx()
+    assert M.best_decoder(ctx, media["video"]) == []
+    assert "Decoder test" in ctx.logs[-1] and "processor:" in ctx.logs[-1]
+    assert list(config.load_settings()["decoders"].values()) == [[]]
+    ctx.logs.clear()
+    assert M.best_decoder(ctx, media["video"]) == [] and not ctx.logs  # remembered, not measured again
+    assert M.proxy_fps({"avg_frame_rate": "60/1"}) == "30" and M.proxy_fps({"avg_frame_rate": "60000/1001"}) == "30000/1001"
+    assert M.proxy_fps({"avg_frame_rate": "30/1"}) == "30"

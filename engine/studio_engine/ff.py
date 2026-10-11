@@ -59,6 +59,8 @@ def run_ff(ctx: Ctx, args: list[str], duration: float | None = None, msg: str = 
 
     t = threading.Thread(target=read_err, daemon=True)
     t.start()
+    import time
+    t0 = time.time()
     for line in p.stdout:
         if ctx.job.cancel_flag.is_set():
             p.terminate()
@@ -68,7 +70,9 @@ def run_ff(ctx: Ctx, args: list[str], duration: float | None = None, msg: str = 
                 sec = int(line.split("=", 1)[1]) / 1e6
             except ValueError:
                 continue
-            ctx.progress(sec / duration, f"{msg} {_hms(sec)} of {_hms(duration)}" if msg else None)
+            spent = time.time() - t0
+            speed = f" · {sec / spent:.1f}× real time" if spent > 20 and sec > 0 else ""
+            ctx.progress(sec / duration, f"{msg} {_hms(sec)} of {_hms(duration)}{speed}" if msg else None)
     p.wait()
     t.join(timeout=5)
     if ctx.job.cancel_flag.is_set():

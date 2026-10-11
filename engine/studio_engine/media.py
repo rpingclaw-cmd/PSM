@@ -224,17 +224,96 @@ def scale_short_side(n: int) -> str:
     return f"scale=w='if(gt(iw,ih),-2,{n})':h='if(gt(iw,ih),{n},-2)'"
 
 
+DECODERS = {"win": [["-hwaccel", "qsv"], ["-hwaccel", "d3d11va"], ["-hwaccel", "dxva2"], []],
+            "mac": [["-hwaccel", "videotoolbox"], []], "other": [["-hwaccel", "auto"], []]}
+
+
+def _input_of(args: list) -> str | None:
+    return str(args[args.index("-i") + 1]) if "-i" in args else None
+
+
+def best_decoder(ctx: Ctx, video: str) -> list[str]:
+    """Time each way of decoding THIS kind of video (graphics chip or processor) on a few seconds of it and
+    use the fastest. A laptop with two graphics chips can otherwise pick one that is many times slower.
+    The answer is remembered per kind of video (codec, size, bit depth)."""
+    try:
+        info = ff.probe(video)
+        v, dur = stream(info, "video"), duration(info)
+    except Exception:
+        return ["-hwaccel", "auto"]
+    if not v:
+        return []
+    kind = f"{v.get('codec_name')}-{v.get('width')}x{v.get('height')}-{v.get('pix_fmt')}"
+    st = config.load_settings()
+    known = (st.get("decoders") or {}).get(kind)
+    if known is not None:
+        return list(known)
+    import time
+    start = max(0.0, min(dur * 0.1, dur - 4))
+    probe = lambda hw: [ff.tool("ffmpeg"), "-hide_banner", "-nostdin", "-loglevel", "error", *hw, "-ss", f"{start:.2f}",
+                        "-t", "3", "-i", video, "-map", "0:v:0", "-vf", "scale=-2:360", "-f", "null", "-"]
+    flags = 0x08000000 if config.IS_WIN else 0
+    subprocess.run([ff.tool("ffmpeg"), "-v", "error", "-nostdin", "-ss", f"{start:.2f}", "-t", "3", "-i", video,
+                    "-map", "0:v:0", "-c", "copy", "-f", "null", "-"], capture_output=True, creationflags=flags)  # read it once
+    os_key = "win" if config.IS_WIN else "mac" if config.IS_MAC else "other"
+    times, report = {}, []
+    ctx.progress(0.0, "Finding the fastest way to read this video on this computer (once, under a minute)…")
+    for hw in DECODERS[os_key]:
+        ctx.check()
+        t0 = time.time()
+        try:
+            r = subprocess.run(probe(hw), capture_output=True, text=True, timeout=45, creationflags=flags)
+            ok = r.returncode == 0
+        except subprocess.TimeoutExpired:
+            ok = False
+        took = time.time() - t0
+        report.append(f"{' '.join(hw) or 'processor'}: {f'{took:.1f} s' if ok else 'not available'}")
+        if ok:
+            times[tuple(hw)] = took
+    cpu = times.pop((), None)
+    hw_best = min(times, key=times.get) if times else None
+    # a graphics chip must be clearly faster than the processor (the processor never surprises us)
+    best = list(hw_best) if hw_best and (cpu is None or times[hw_best] < cpu * 0.85) else []
+    ctx.log("Decoder test on 3 s of video: " + "; ".join(report) + f" -> using {' '.join(best) or 'processor'}")
+    _remember_decoder(video, best)
+    return list(best)
+
+
 def run_video(ctx: Ctx, p: dict, args: list[str], **kw):
-    """Run with hardware decoding first; if the graphics driver refuses, retry on the processor."""
+    """Decode with the fastest method for this video (measured once); if it fails, retry on the processor."""
     if p.get("no_hwdec"):
         return ff.run_ff(ctx, args, **kw)
+    src = _input_of(args)
+    hw = best_decoder(ctx, src) if src else ["-hwaccel", "auto"]
+    if not hw:
+        return ff.run_ff(ctx, args, **kw)
     try:
-        return ff.run_ff(ctx, ["-hwaccel", "auto"] + args, **kw)
+        return ff.run_ff(ctx, hw + args, **kw)
     except JobError as e:
         if "disk is full" in str(e):
             raise
         ctx.log("Hardware decoding failed, retrying on the processor: " + str(e))
+        _remember_decoder(src, [])  # don't try it again for this kind of video
         return ff.run_ff(ctx, args, **kw)
+
+
+def _remember_decoder(video: str, hw: list[str]):
+    try:
+        v = stream(ff.probe(video), "video")
+        st = config.load_settings()
+        st.setdefault("decoders", {})[f"{v.get('codec_name')}-{v.get('width')}x{v.get('height')}-{v.get('pix_fmt')}"] = hw
+        config.save_settings(st)
+    except Exception:
+        pass
+
+
+def proxy_fps(v: dict | None) -> str:
+    """The preview copy plays at most 30 frames a second (plenty for editing, half the work for 60 fps phones).
+    The final video always uses the original frame rate."""
+    f = fps(v)
+    if f <= 31:
+        return output_fps(v)
+    return {"60000/1001": "30000/1001", "60": "30", "50": "25"}.get(output_fps(v), "30")
 
 
 def job_prepare(ctx: Ctx, p: dict) -> dict:
@@ -247,7 +326,7 @@ def job_prepare(ctx: Ctx, p: dict) -> dict:
     (wd / "video_info.json").write_text(json.dumps(vinfo), encoding="utf-8")
     hardware.disk_check(wd, 0.5 + dur / 3600 * 1.0, "the preview copy and sound files")
     out_v, out_p = wd / "video_16k.wav", wd / "proxy.mp4"
-    key = key_of({"v": file_sig(video), "ver": 2})
+    key = key_of({"v": file_sig(video), "ver": 3})
     if not (step_done(out_v, key) and (not v or step_done(out_p, key))):
         tv, tp = ff.tmp_of(out_v), ff.tmp_of(out_p)
         args = ["-i", video]
@@ -256,8 +335,8 @@ def job_prepare(ctx: Ctx, p: dict) -> dict:
         if v:
             vf = ",".join(x for x in [scale_short_side(540), tonemap_chain(v), "format=yuv420p"] if x)
             args += ["-map", "0:v:0"] + (["-map", "0:a:0"] if stream(vinfo, "audio") else []) + [
-                "-vf", vf, "-fps_mode", "cfr", "-r", output_fps(v), "-c:v", "libx264", "-preset", "veryfast",
-                "-crf", "28", "-g", str(int(round(fps(v)))), "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", tp]
+                "-vf", vf, "-fps_mode", "cfr", "-r", proxy_fps(v), "-c:v", "libx264", "-preset", "veryfast",
+                "-crf", "28", "-g", "15", "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", tp]
         ctx.stage(0.0, 0.85 if audio else 1.0)
         run_video(ctx, p, args, duration=dur, msg="Making the preview copy and reading the sound…")
         if stream(vinfo, "audio"):
