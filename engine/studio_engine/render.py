@@ -4,6 +4,7 @@ Lip sync stays exact because every cut is snapped to a whole video frame, the pi
 without sound, and the sound is assembled once, sample-exact, from the cleaned audio and added at the end.
 """
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -12,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import audio, config, exports, faces, ff, framing, hardware, media, picture, syncer
+from . import audio, config, exports, faces, ff, framing, hardware, matte, media, picture, syncer
 from .jobs import Ctx, JobError, file_sig, key_of, mark_done, read_done, step_done
 from .wavio import Writer, open_pcm16
 
@@ -89,8 +90,15 @@ class Pictures:
     """Builds the ffmpeg picture filter for any stretch of the source, with framing, punch-in and colour."""
 
     def __init__(self, v, kind, st, reel_h, faces_d, segs, fr):
-        self.v, self.st, self.fr, self.segs = v, st, fr, segs
+        self.v, self.st, self.fr, self.segs, self.kind = v, st, fr, segs, kind
         self.g = geometry(v, kind, st, reel_h)
+        self.cwd = None  # folder ffmpeg runs in (files in the filter are given relative to it)
+        self.n_calls = 0
+        bg = st.get("background") or {}
+        self.bg = bg if bg.get("mode") in ("blur", "colour", "image") and st.get("_matte") else None
+        if self.bg:
+            mi = media.stream(ff.probe(st["_matte"]), "video")
+            self.matte_wh = (int(mi["width"]), int(mi["height"]))
         g = self.g
         self.framer = framing.Framer(faces_d, g["W"], g["H"], g["aspect"])
         self.segs_s = [(float(Fraction(a) / fr), float(Fraction(b) / fr)) for a, b in segs]
@@ -119,14 +127,76 @@ class Pictures:
                     f"eq=brightness=-0.06[bg];[bg][b]overlay=(W-w)/2:0" + (f",{col}" if col else "") + ",format=yuv420p",
                     None)
         z = self.zooms[part] if part >= 0 else 1.0
-        cw, ch, x, y = self.framer.at(times, z, fy)
+        rect = self.rect_for(a, b) if self.kind != "reel" else None
+        if rect:
+            cw, ch, x, y = self.fixed(rect, len(times))
+        else:
+            cw, ch, x, y = self.framer.at(times, z, fy)
         moving = bool((x != x[0]).any() or (y != y[0]).any())
         crop = f"crop@fr=w={cw}:h={ch}:x={x[0]}:y={y[0]}"
         scale = f"scale={g['OW']}:{g['OH']}:flags=lanczos"
         lk = look(self.v, self.st, gains)
-        if moving and cmd_name:
-            return f"sendcmd=f={cmd_name},{crop},{scale},{lk}", framing.sendcmd_text(fr, x, y)
-        return f"{crop},{scale},{lk}", None
+        cmd = framing.sendcmd_text(fr, x, y) if moving and cmd_name else None
+        pre = f"sendcmd=f={cmd_name}," if cmd else ""
+        if not self.bg:
+            return f"{pre}{crop},{scale},{lk}", cmd
+        # background replacement: the person (from the matte) over blur / a colour / a picture
+        mw, mh = self.matte_wh
+        sx, sy = mw / g["W"], mh / g["H"]
+        mx, my = np.round(x * sx).astype(int), np.round(y * sy).astype(int)
+        mcw, mch = max(2, int(round(cw * sx))), max(2, int(round(ch * sy)))
+        if cmd:
+            cmd += framing.sendcmd_text(fr, np.minimum(mx, mw - mcw), np.minimum(my, mh - mch), "crop@fm")
+        self.n_calls += 1
+        u = self.n_calls
+        rel = lambda f: os.path.relpath(f, self.cwd or ".").replace("\\", "/")
+        OW, OH = g["OW"], g["OH"]
+        al = (f"movie=filename={rel(self.st['_matte'])}:sp={times[0]:.6f},setpts=PTS-STARTPTS,"
+              f"crop@fm=w={mcw}:h={mch}:x={min(mx[0], mw - mcw)}:y={min(my[0], mh - mch)},"
+              f"scale={OW}:{OH}:flags=bicubic,format=gray[al{u}]")
+        mode = self.bg["mode"]
+        if mode == "blur":
+            bgc = f"[f{u}b]scale={max(16, OW // 10 // 2 * 2)}:-2,boxblur=8:2,scale={OW}:{OH},eq=brightness=-0.04[bg{u}]"
+            head = f"{pre}{crop},{scale},{lk},split=2[f{u}a][f{u}b]"
+        else:
+            head = f"{pre}{crop},{scale},{lk}[f{u}a]"
+            col = str(self.bg.get("colour") or "#20303c").lstrip("#")
+            base = f"color=c=0x{col}:s={OW}x{OH}:r={fr}"
+            if mode == "image" and self.st.get("_bgimg"):
+                bgc = (f"{base}[bb{u}];movie=filename={rel(self.st['_bgimg'])},scale={OW}:{OH}:"
+                       f"force_original_aspect_ratio=increase,crop={OW}:{OH},setsar=1,format=yuv420p[bi{u}];"
+                       f"[bb{u}][bi{u}]overlay=eof_action=repeat,format=yuv420p[bg{u}]")
+            else:
+                bgc = f"{base},format=yuv420p[bg{u}]"
+        return (f"{head};{al};{bgc};[f{u}a][al{u}]alphamerge[fa{u}];"
+                f"[bg{u}][fa{u}]overlay=shortest=1:format=auto,setsar=1,format=yuv420p"), cmd
+
+    def rect_for(self, a: float, b: float) -> dict | None:
+        """The owner's own framing box: for this part (from a section override) or for the whole video."""
+        if self.g["mode"] != "crop":
+            return None
+        best = None
+        for o in self.st.get("framing_overrides") or []:
+            r = o.get("rect")
+            ov = min(b, float(o["end"])) - max(a, float(o["start"]))
+            if r and ov > 0 and (best is None or ov > best[0]):
+                best = (ov, r)
+        return best[1] if best else (self.st.get("rect") or None)
+
+    def fixed(self, rect: dict, n: int):
+        """Box given as fractions of the picture (x, y = top-left, w = width); its height follows the output shape."""
+        g = self.g
+        W, H, asp = g["W"], g["H"], g["aspect"]
+        cw = max(32.0, float(rect.get("w", 1)) * W)
+        ch = cw / asp
+        if ch > H:
+            ch, cw = H, H * asp
+        if cw > W:
+            cw, ch = W, W / asp
+        cw, ch = int(cw) // 2 * 2, int(ch) // 2 * 2
+        x = int(min(max(0, float(rect.get("x", 0)) * W), W - cw))
+        y = int(min(max(0, float(rect.get("y", 0)) * H), H - ch))
+        return cw, ch, np.full(n, x), np.full(n, y)
 
 
 def encode_piece(ctx: Ctx, p: dict, args_in: list, vf: str, n: int, fr: Fraction, venc: list, gop: str, out: Path,
@@ -248,6 +318,7 @@ def render_pieces(ctx: Ctx, p: dict, video: Path, v: dict, fr: Fraction, segs, d
     """Plan the pieces (framing, punch-ins, covers with dissolves) and encode each one (resumable)."""
     d.mkdir(parents=True, exist_ok=True)
     pics = Pictures(v, kind, st, reel_h, faces_d, segs, fr)
+    pics.cwd = d
     venc = vcodec(enc, kind, pics.g["OH"])
     gop = str(int(round(float(fr) * 2)))
     total = sum(b - a for a, b in segs)
@@ -255,7 +326,9 @@ def render_pieces(ctx: Ctx, p: dict, video: Path, v: dict, fr: Fraction, segs, d
     cov_out = [(a, b) for a, b, _ in cov_idx]
     pieces = picture.plan(segs, cov_out, fr)
     base_key = {"v": file_sig(video), "fr": str(fr), "g": pics.g, "enc": venc, "ver": 2,
-                "st": {k: st.get(k) for k in ("layout", "res", "punch", "reelPunch", "colour", "framing_overrides")}}
+                "st": {k: st.get(k) for k in ("layout", "res", "punch", "reelPunch", "colour", "framing_overrides", "rect",
+                                         "background")},
+                "bgfiles": [file_sig(Path(st[k])) for k in ("_matte", "_bgimg") if st.get(k)]}
     clip_files = {}
     cover_info = []
     avoid = [[float(c["start"]), float(c["end"])] for c in covers]
@@ -458,6 +531,7 @@ def job_render(ctx: Ctx, p: dict) -> dict:
     if not segs:
         raise JobError("Nothing left to render — everything is cut.")
     st = p.get("settings") or {}
+    _background_files(video, st)
     hw = hardware.report()
     enc = st.get("enc") or "auto"
     enc = hw["best_encoder"] if enc == "auto" else enc
@@ -592,6 +666,27 @@ def job_render(ctx: Ctx, p: dict) -> dict:
             "message": ("Finished ✓ — quality check passed." if qc_ok else "Finished — the quality check found something to look at (see below).")}
 
 
+def _background_files(video, st: dict):
+    """Background replacement needs the person cut-out (matte) and, for 'my picture', a copy of that picture
+    inside studio_work (so the filter can name it without drive letters)."""
+    bg = st.get("background") or {}
+    if bg.get("mode") not in ("blur", "colour", "image"):
+        return
+    m = matte.find(str(video))
+    if not m:
+        raise JobError("To change the background, first press “Find the person” in the Picture panel "
+                       "(it takes a while; it is done once per video).")
+    st["_matte"] = str(m)
+    if bg.get("mode") == "image":
+        src = Path(str(bg.get("file") or ""))
+        if not src.is_file():
+            raise JobError("Choose the background picture first (Picture panel → Background → Choose picture).")
+        dst = media.work_dir(str(video)) / ("background" + src.suffix.lower())
+        if not dst.exists() or dst.read_bytes() != src.read_bytes():  # (copy only when it changed: keeps finished parts)
+            shutil.copyfile(src, dst)
+        st["_bgimg"] = str(dst)
+
+
 def job_frame(ctx: Ctx, p: dict) -> dict:
     """One finished-look still (framing, punch-in, colour) at a moment of the source - to check before rendering."""
     video = media._need(p.get("video"), "video")
@@ -606,10 +701,12 @@ def job_frame(ctx: Ctx, p: dict) -> dict:
     zoom_part = bool(p.get("closeup"))
     w = int(5 * fr)  # parts around the moment (colour matching looks at a few seconds)
     segs = [(max(0, a - 3 * w), max(1, a - w)), (max(0, a - w), a + w)] if zoom_part else [(max(0, a - w), a + w)]
-    pics = Pictures(v, "full", st, 1920, faces.load(str(video)), segs, fr)
-    vf, _ = pics.vf(a, 1, len(segs) - 1, None)
+    _background_files(video, st)
     d = media.work_dir(str(video)) / "frames"
     d.mkdir(exist_ok=True)
+    pics = Pictures(v, "full", st, 1920, faces.load(str(video)), segs, fr)
+    pics.cwd = d
+    vf, _ = pics.vf(a, 1, len(segs) - 1, None)
     for old in d.glob("*.jpg"):
         try:
             old.unlink()
