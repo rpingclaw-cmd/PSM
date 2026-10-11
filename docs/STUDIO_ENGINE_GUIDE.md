@@ -45,9 +45,23 @@ Your video never leaves your computer.
    are kept, and short sounds without words appear as grey [sound] items you can keep or cut.
    *Smooth cuts* cross-fades the sound at every cut (40 ms is a good default).
 7. **Reels & chapters** — ✨ suggests Reels and YouTube chapters; edit the titles. Chapter times follow your edits.
-8. **Make the final files** — choose **1080p** on this laptop, then **Make the final files on this computer**.
-   The files appear next to your video, with *Edited - quality check.txt* (lip sync at 3 points, loudness, length)
-   and *Edited - chapters.txt* (paste into the YouTube description).
+8. **Picture** — press **Find the speaker**. Choose the shape: *YouTube 16:9 — follows the speaker* (recommended
+   for your vertical iPhone video), *16:9 with blurred sides*, or *same as recorded*. *Close-up at every cut* hides
+   jump cuts. **Show a still here** shows exactly how a moment will look (framing + colour) before the long render.
+   Colour: automatic matching plus brightness, contrast, warmth and colour strength.
+   *Framing by hand*: for any section choose wide / close-up, or hold the camera still.
+   *Cover parts of the video* (e.g. **0:00 to 1:00** where the picture is unusable): the sound continues and the
+   picture is replaced — by other silent moments of the talk, **your own photo or video** (e.g. a photo of
+   Babuji Maharaj, with a slow zoom), or a title card — with soft dissolves.
+   *Reel captions*: word-by-word highlight (gold / yellow / white) or simple lines.
+9. **YouTube package** — ✨ writes 5 title options, a description and tags (chapters are added automatically);
+   **Suggest thumbnail pictures** picks the best close-ups; click one, type 2–5 words, download the thumbnail.
+10. **Make the final files** — **1080p** on this laptop, then **Make the final files on this computer**. Next to your
+   video you get: *Edited - full video.mp4*, the podcast (*.mp3* + *.wav*), captions (*.srt* + *.vtt*),
+   *Edited - chapters.txt*, *Edited - YouTube.txt*, every Reel, *Edited - timeline for DaVinci Resolve.fcpxml*
+   (open it in DaVinci Resolve: File → Import → Timeline, to fine-tune by hand), *Edited - cut list.edl*,
+   *Edited - project.json*, and *Edited - quality check.txt* (lip sync at 3 points, loudness, length,
+   black or frozen picture, caption readability).
 
 If anything is interrupted (laptop closed, power cut), start the engine again and press **Resume**
 on the job — finished parts are kept.

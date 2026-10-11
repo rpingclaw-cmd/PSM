@@ -2,7 +2,6 @@
 import argparse
 import asyncio
 import json
-import os
 import socket
 import subprocess
 import sys
@@ -14,7 +13,7 @@ from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 
-from . import VERSION, audio, config, hardware, media, render, syncer, vad
+from . import VERSION, audio, config, faces, hardware, media, render, syncer, thumbs, vad
 from .jobs import JobError, JobManager
 
 HANDLERS = {
@@ -25,6 +24,9 @@ HANDLERS = {
     "preview": audio.job_preview,
     "render": render.job_render,
     "analyse": vad.job_analyse,
+    "faces": faces.job_faces,
+    "frame": render.job_frame,
+    "thumbs": thumbs.job_thumbs,
 }
 
 app = FastAPI(title="Studio Engine", version=VERSION, docs_url=None, redoc_url=None, openapi_url=None)
@@ -175,7 +177,7 @@ def _allowed_file(p: Path) -> bool:
     return False
 
 
-TYPES = {".mp4": "video/mp4", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".json": "application/json",
+TYPES = {".jpg": "image/jpeg", ".png": "image/png", ".mp4": "video/mp4", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".json": "application/json",
          ".srt": "text/plain; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
 
 

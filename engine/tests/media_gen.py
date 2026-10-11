@@ -90,7 +90,7 @@ def write_wav(path, x: np.ndarray, rate: int = RATE):
 
 
 def make(folder: Path, video_s: float = 150.0, A: float = 3.217, B: float = 1.00004, hdr: bool = True,
-         size: str = "360x640") -> dict:
+         size: str = "360x640", face: str | None = None) -> dict:
     folder.mkdir(parents=True, exist_ok=True)
     es = espeak_talk(video_s + 10)  # "true" talk, on the video's clock
     speech, script = es if es else (speech_like(video_s + 10, seed=7), None)
@@ -108,9 +108,23 @@ def make(folder: Path, video_s: float = 150.0, A: float = 3.217, B: float = 1.00
     venc = (["-c:v", "libx265", "-pix_fmt", "yuv420p10le", "-preset", "ultrafast", "-x265-params", "log-level=error",
              "-color_primaries", "bt2020", "-color_trc", "arib-std-b67", "-colorspace", "bt2020nc", "-tag:v", "hvc1"]
             if hdr else ["-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p"])
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s={size}:r=30:d={video_s}",
-                    "-i", folder / "cam.wav", "-vf", vf, "-fps_mode", "passthrough", *venc,
-                    "-c:a", "aac", "-b:a", "128k", "-shortest", video], check=True)
+    # real HDR like an iPhone: the picture is converted to HLG / BT.2020 (not just labelled as HDR)
+    to_hlg = (",format=gbrpf32le,zscale=tin=iec61966-2-1:t=linear:npl=100,zscale=p=bt2020:t=arib-std-b67:"
+              "m=bt2020nc:r=tv:pin=bt709:min=gbr,format=yuv420p10le") if hdr else ""
+    if face:  # a real face (for framing tests) on a plain background
+        w, h = (int(x) for x in size.split("x"))
+        fs = w * 5 // 12
+        graph = (f"color=c=0x6a7a8a:s={size}:r=30:d={video_s}[bg];movie='{face}',loop=-1:1,scale={fs}:{fs}[f];"
+                 f"[bg][f]overlay=x='{(w - fs) // 2}+6*sin(t*1.3)':y='{h // 4}+4*sin(t*0.9)':shortest=1,"  # sways a little
+                 "noise=alls=5:allf=t,"  # camera-like grain
+                 f"{vf.split('=', 1)[0]}={vf.split('=', 1)[1]}{to_hlg}")
+        src = ["-f", "lavfi", "-i", graph]
+        vfa = []
+    else:
+        src = ["-f", "lavfi", "-i", f"testsrc2=s={size}:r=30:d={video_s}"]
+        vfa = ["-vf", vf + to_hlg]
+    subprocess.run(["ffmpeg", "-v", "error", "-y", *src, "-i", folder / "cam.wav", *vfa, "-fps_mode", "passthrough",
+                    *venc, "-c:a", "aac", "-b:a", "128k", "-shortest", video], check=True)
     rec_file = folder / "Recorder audio.m4a"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", folder / "rec.wav", "-ar", "44100", "-ac", "2",
                     "-c:a", "aac", "-b:a", "160k", rec_file], check=True)

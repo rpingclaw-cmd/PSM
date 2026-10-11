@@ -133,6 +133,13 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
 .stu-w.extra{color:var(--muted);font-style:italic}
 .stu-w.flash{outline:2px solid var(--accent);outline-offset:2px}
 .chap{display:grid;grid-template-columns:62px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.cover-row{display:grid;grid-template-columns:90px 90px 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.cover-row .cover-extra{grid-column:1/-1;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+@media (max-width:520px){.cover-row{grid-template-columns:1fr 1fr}.cover-row select{grid-column:1/-1}}
+.th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:8px}
+.th-pick{padding:0;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:none;cursor:pointer}
+.th-pick:hover,.th-pick:focus-visible{border-color:var(--accent)}
+.th-pick img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
 
 @font-face {
   font-family: 'Cormorant Garamond';
@@ -705,10 +712,71 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
         <p class="status" id="stuChapWarn" style="color:var(--warn)"></p>
       </fieldset>
 
-      <fieldset><legend>8 · Make the final files</legend>
+      <fieldset id="stuPicture"><legend>8 · Picture</legend>
+        <p class="hint" id="picOff">Needs the Studio Engine (top of this tab).</p>
+        <div id="picOn" hidden>
+          <div class="under" style="margin:0 0 6px"><button class="btn small primary" id="picFaces">Find the speaker (face tracking)</button></div>
+          <p class="status" id="picFacesStatus"></p>
+          <div class="row">
+            <label class="f"><span>Shape of the full video</span><select id="pic_layout"><option value="crop169">YouTube 16:9 — follows the speaker (recommended)</option><option value="blur169">YouTube 16:9 — whole picture, blurred sides</option><option value="original">Same as recorded (vertical)</option></select></label>
+            <label class="f"><span>Close-up at every cut (hides jump cuts)</span><select id="pic_punch"><option value="1">None</option><option value="1.1">Gentle (110%)</option><option value="1.18">Standard (118%, recommended)</option><option value="1.25">Strong (125%)</option></select></label>
+          </div>
+          <h4 class="group-title">Colour</h4>
+          <label class="check"><input type="checkbox" id="pic_auto"> Match colour and brightness automatically between parts</label>
+          <div class="row">
+            <label class="f"><span>Brightness <strong id="pic_brightnessVal"></strong></span><input type="range" id="pic_brightness" min="-0.15" max="0.15" step="0.01"></label>
+            <label class="f"><span>Contrast <strong id="pic_contrastVal"></strong></span><input type="range" id="pic_contrast" min="0.8" max="1.25" step="0.01"></label>
+            <label class="f"><span>Warmth <strong id="pic_warmthVal"></strong></span><input type="range" id="pic_warmth" min="-1" max="1" step="0.05"></label>
+            <label class="f"><span>Colour strength <strong id="pic_saturationVal"></strong></span><input type="range" id="pic_saturation" min="0.6" max="1.5" step="0.02"></label>
+          </div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small" id="picPreview">Show a still here (as it will look)</button><button class="btn small" id="picPreviewClose">…as a close-up</button><button class="btn small" id="picReset">Reset colour</button></div>
+          <img id="picStill" alt="Preview still" hidden style="width:100%;max-width:640px;border-radius:8px;display:block;margin-bottom:8px">
+          <p class="status" id="picStatus"></p>
+          <h4 class="group-title">Framing by hand (optional)</h4>
+          <p class="hint" style="margin:0 0 8px">Automatic framing is usually right. For a section where you want something else, add it here.</p>
+          <div id="picFrames"></div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small" id="picFrameAdd">＋ Add a section</button></div>
+          <h4 class="group-title">Cover parts of the video</h4>
+          <p class="hint" style="margin:0 0 8px">For parts where the picture is unusable (for example the first minute). The sound keeps playing; the picture is replaced, with soft dissolves.</p>
+          <div id="picCovers"></div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small" id="picCoverAdd">＋ Add a cover range</button></div>
+          <h4 class="group-title">Reel captions</h4>
+          <div class="row">
+            <label class="f"><span>Style</span><select id="pic_capStyle"><option value="gold">Word by word — gold highlight</option><option value="yellow">Word by word — yellow highlight</option><option value="white">Word by word — white</option><option value="simple">Simple lines</option></select></label>
+            <label class="check" style="align-self:end;margin-bottom:16px"><input type="checkbox" id="pic_capUpper"> CAPITAL LETTERS</label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="stuYouTube"><legend>9 · YouTube package</legend>
+        <div class="under" style="margin:0 0 8px"><button class="btn small primary" id="ytWrite">✨ Write title, description and tags (AI)</button><button class="btn small" id="ytCopy">Copy all for YouTube</button></div>
+        <p class="status" id="ytStatus"></p>
+        <div id="ytTitles"></div>
+        <label class="f"><span>Title <span class="status" id="ytTitleCount"></span></span><input id="ytTitle" maxlength="100"></label>
+        <label class="f"><span>Description <span class="status" id="ytChapNote"></span></span><textarea id="ytDesc" rows="5"></textarea></label>
+        <label class="f"><span>Tags (comma separated)</span><input id="ytTags"></label>
+        <h4 class="group-title">Thumbnail</h4>
+        <div class="under" style="margin:0 0 8px"><button class="btn small" id="thSuggestBtn">Suggest thumbnail pictures (Studio Engine)</button></div>
+        <p class="status" id="thStatus"></p>
+        <div id="thGrid" class="th-grid"></div>
+        <div id="thDesign" hidden>
+          <canvas id="thCanvas" width="1280" height="720" style="width:100%;max-width:640px;border-radius:8px;display:block;margin:8px 0"></canvas>
+          <div class="row">
+            <label class="f"><span>Words on the thumbnail (short is best: 2–5 words)</span><input id="thText"></label>
+            <label class="f"><span>Font</span><select id="thFont"><option>Montserrat</option><option>Playfair Display</option><option>Cinzel</option><option>Marcellus</option><option>Cormorant Garamond</option><option>Lora</option></select></label>
+          </div>
+          <div class="row">
+            <label class="f"><span>Place</span><select id="thPos"><option value="bottom">Bottom</option><option value="left">Left side</option></select></label>
+            <label class="f"><span>Colour</span><select id="thColour"><option value="#FFFFFF">White</option><option value="#F2C14E">Gold</option><option value="#FFE14D">Yellow</option></select></label>
+          </div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small primary" id="thSave">Download thumbnail (1280×720)</button></div>
+        </div>
+      </fieldset>
+
+      <fieldset><legend>10 · Make the final files</legend>
         <div class="row">
           <label class="f"><span>Sound cleanup</span><select id="stu_clean"><option value="light">Light — keep it natural</option><option value="standard">Standard — podcast clarity (recommended)</option><option value="strong">Strong — noisy room (AI noise removal)</option><option value="none">Loudness only</option></select></label>
-          <label class="f"><span>Full video size</span><select id="stu_res"><option value="orig">Original (4K)</option><option value="1440">1440p</option><option value="1080">1080p (faster, smaller)</option></select></label>
+          <label class="f"><span>Full video size</span><select id="stu_res"><option value="1080">1080p (recommended)</option><option value="1440">1440p</option><option value="2160">4K (enlarged from the phone picture, slow)</option><option value="orig">Original size</option></select></label>
         </div>
         <div class="row">
           <label class="f"><span>Speed</span><select id="stu_enc"><option value="auto">Automatic — best for this computer (Studio Engine)</option><option value="cpu">Normal (works on every computer)</option><option value="mac">Fast — Mac</option><option value="nvidia">Fast — NVIDIA graphics</option><option value="intel">Fast — Intel graphics</option><option value="amd">Fast — AMD graphics</option></select></label>
@@ -717,7 +785,7 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
         <label class="check"><input type="checkbox" id="stu_reelCaps"> Burn captions into Reels</label>
         <div id="engRenderBox" hidden>
           <div class="under" style="margin:8px 0"><button class="btn primary" id="engRenderBtn">Make the final files on this computer</button><button class="btn small" id="engOpenFolder" hidden>Open the folder</button></div>
-          <p class="hint">Made next to your video: <em>Edited - full video.mp4</em>, the podcast (<em>.mp3</em> + <em>.wav</em>), captions (<em>.srt</em>), every Reel, and a quality check. On a laptop, choose 1080p: a 1-hour talk takes roughly 1–3 hours. You can close the browser; the engine keeps working. If it is interrupted, press Resume — finished parts are kept.</p>
+          <p class="hint">Made next to your video: <em>Edited - full video.mp4</em>, the podcast (<em>.mp3</em> + <em>.wav</em>), captions (<em>.srt</em> + <em>.vtt</em>), chapters and YouTube text, every Reel, a timeline for DaVinci Resolve (<em>.fcpxml</em>) and a cut list (<em>.edl</em>) for fine-tuning by hand, and a quality check (lip sync, loudness, black or frozen picture, caption timing). On a laptop, choose 1080p: a 1-hour talk takes roughly 1–3 hours. You can close the browser; the engine keeps working. If it is interrupted, press Resume — finished parts are kept.</p>
           <pre id="engQC" class="eng-qc" hidden></pre>
           <p class="status" style="margin:10px 0 0">Or, without the engine, download a render file:</p>
         </div>
@@ -2911,7 +2979,7 @@ $('#libXlsx').addEventListener('click',async()=>{
    STUDIO — podcast / talk editor. Heavy video work is done by ffmpeg on
    the user's own computer; the browser does sync, transcript, editing.
    ===================================================================== */
-const STU_DEFAULTS={clean:'standard',res:'orig',enc:'auto',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
+const STU_DEFAULTS={clean:'standard',res:'1080',enc:'auto',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
 let STU={videoName:'',audioName:'',videoFile:null,proxyFile:null,info:null,wavV:null,wavA:null,dur:0,sync:null,words:[],removed:{},reels:[],settings:{...STU_DEFAULTS},transcribed:false};
 const FILLERS=new Set(['um','umm','uh','uhh','erm','er','ah','hmm','mm','mmm','uhm']);
 function stuSay(id,t){const el=$(id);if(el)el.textContent=t}
@@ -3073,14 +3141,21 @@ function mapper(segs){const starts=[];let acc=0;for(const [a,b] of segs){starts.
   return {total:acc,map:t=>{for(let i=0;i<segs.length;i++){if(t>=segs[i][0]-1e-6&&t<=segs[i][1]+1e-6)return starts[i]+(t-segs[i][0])}return null}}}
 function captionChunks(segs,maxWords,maxChars){
   const m=mapper(segs),out=[];let cur=[];
-  const flush=()=>{if(!cur.length)return;const s=m.map(cur[0].s),e=m.map(cur[cur.length-1].e);if(s!=null&&e!=null&&e>s)out.push({s,e:Math.max(e,s+0.4),t:cur.map(w=>w.w).join(' ')});cur=[]};
-  STU.words.forEach((w,i)=>{if(STU.removed[i])return;const ms=m.map(w.s),me=m.map(w.e);if(ms==null||me==null){flush();return}
+  const flush=()=>{if(!cur.length)return;const s=m.map(cur[0].s),e=m.map(cur[cur.length-1].e);if(s!=null&&e!=null&&e>s)out.push({s,e:Math.max(e,s+0.8),t:cur.map(w=>w.w).join(' ')});cur=[]};
+  STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd)return;const ms=m.map(w.s),me=m.map(w.e);if(ms==null||me==null){flush();return}
     const prev=cur[cur.length-1];if(prev&&(w.s-prev.e>0.7||cur.length>=maxWords||(cur.map(x=>x.w).join(' ').length+w.w.length)>maxChars))flush();
     cur.push(w);if(/[.?!]$/.test(w.w))flush()});
-  flush();for(let i=0;i<out.length-1;i++)if(out[i].e>out[i+1].s)out[i].e=out[i+1].s;return out;
+  flush();
+  // let each caption stay up to 0.7 s longer into the following pause (easier to read), never overlapping
+  for(let i=0;i<out.length;i++){const next=i+1<out.length?out[i+1].s:Infinity;out[i].e=Math.min(next,out[i].e+0.7)}
+  for(let i=0;i<out.length-1;i++)if(out[i].e>out[i+1].s)out[i].e=out[i+1].s;return out;
 }
 const srtT=t=>{const ms=Math.round(t*1000),h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms%1000).padStart(3,'0')}`};
-function makeSrt(segs){return captionChunks(segs,10,60).map((c,i)=>`${i+1}\n${srtT(c.s)} --> ${srtT(c.e)}\n${c.t}\n`).join('\n')}
+/* at most 42 characters per line, 2 lines (broadcast readability rules); split near the middle */
+function wrap2(t){if(t.length<=42)return t;const w=t.split(' ');let best=null;
+  for(let k=1;k<w.length;k++){const a=w.slice(0,k).join(' '),b=w.slice(k).join(' ');const sc=Math.max(a.length,b.length);if(!best||sc<best.sc)best={a,b,sc}}
+  return best?best.a+'\n'+best.b:t}
+function makeSrt(segs){return captionChunks(segs,10,60).map((c,i)=>`${i+1}\n${srtT(c.s)} --> ${srtT(c.e)}\n${wrap2(c.t)}\n`).join('\n')}
 const assT=t=>{const cs=Math.round(t*100),h=Math.floor(cs/360000),m=Math.floor(cs%360000/6000),s=Math.floor(cs%6000/100);return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs%100).padStart(2,'0')}`};
 function makeAss(segs){
   const head=`[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\nWrapStyle: 0\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,74,&H00FFFFFF,&H00FFFFFF,&H00141414,&H96000000,-1,0,0,0,100,100,0,0,1,5,2,2,90,90,560,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
@@ -3119,7 +3194,7 @@ function vcodec(kind){
   return `-c:v libx264 -preset ${full?'veryfast':'medium'} -crf ${full?20:19}`;
 }
 function vfilter(kind){
-  const f=[];if(isHdr())f.push('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv');
+  const f=[];if(isHdr())f.push('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=mobius:desat=0,zscale=t=bt709:m=bt709:r=tv');
   if(kind==='reel'){const h=STU.settings.reelRes==='720'?1280:1920,w=h*9/16;f.push(`scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`)}
   else if(STU.settings.res!=='orig'){const s=+STU.settings.res;f.push(`scale=w='if(gt(iw,ih),-2,${s})':h='if(gt(iw,ih),${s},-2)'`)}
   f.push('format=yuv420p');return f.join(',');
@@ -3278,7 +3353,7 @@ function wireStudio(){
   $('#stuRenderMac').addEventListener('click',()=>downloadRender('mac').catch(e=>alert(e.message)));
   $('#stuSrt').addEventListener('click',()=>saveBlob(new Blob([makeSrt(keepSegments())],{type:'text/plain'}),'Edited - full video.srt'));
   $('#stuCsv').addEventListener('click',()=>{const k=keepSegments();saveBlob(new Blob(['part,start,end,length\n'+k.map(([s,e],i)=>`${i+1},${fmtT(s)},${fmtT(e)},${(e-s).toFixed(2)}`).join('\n')],{type:'text/csv'}),'cut-list.csv')});
-  $('#stuText2').addEventListener('click',()=>{const k=keepSegments(),m=mapper(k);saveBlob(new Blob([STU.words.filter((w,i)=>!STU.removed[i]).map(w=>w.w).join(' ')],{type:'text/plain'}),'Edited transcript.txt')});
+  $('#stuText2').addEventListener('click',()=>{const k=keepSegments(),m=mapper(k);saveBlob(new Blob([STU.words.filter((w,i)=>!STU.removed[i]&&!w.snd).map(w=>w.w).join(' ')],{type:'text/plain'}),'Edited transcript.txt')});
   $('#stuSaveProj').addEventListener('click',()=>{const {videoFile,proxyFile,wavV,wavA,...rest}=STU;saveBlob(new Blob([JSON.stringify(rest)],{type:'application/json'}),`studio-project-${todayStr()}.json`)});
   $('#stuLoadProj').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!('words' in d))throw 0;STU={...STU,...d,settings:{...STU_DEFAULTS,...(d.settings||{})}};await stuSave();stuRenderInfo();stuRenderTranscript()}catch(err){alert('That is not a Studio project file.')}e.target.value=''});
   $('#stuStop').addEventListener('click',()=>stuCtl&&stuCtl.abort());
@@ -3292,7 +3367,7 @@ async function stuPrep(os){
 }
 async function stuSuggest(){
   if(!STU.words.length){stuSay('#stuReelStatus','Transcribe first.');return}
-  const lines=[];let cur=[];STU.words.forEach((w,i)=>{if(STU.removed[i])return;cur.push(i);if(/[.?!]$/.test(w.w)||cur.length>40){lines.push(cur);cur=[]}});if(cur.length)lines.push(cur);
+  const lines=[];let cur=[];STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd)return;cur.push(i);if(/[.?!]$/.test(w.w)||cur.length>40){lines.push(cur);cur=[]}});if(cur.length)lines.push(cur);
   const text=lines.map((l,k)=>`[${k}] (${fmtT(STU.words[l[0]].s)}) ${l.map(i=>STU.words[i].w).join(' ')}`).join('\n');
   const n=Math.max(1,Math.min(15,+$('#stuReelCount').value||5));
   stuSay('#stuReelStatus','Asking AI for the best moments…');
@@ -3315,7 +3390,7 @@ ${text}`;
     stuSave();stuStats();stuSay('#stuReelStatus',`Added ${added} reel suggestion${added===1?'':'s'} (with ${PROVIDERS[got.pid].label}). Play them, rename or remove any.`);
   }catch(e){stuSay('#stuReelStatus',errMsg(e))}
 }
-(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init()})();
+(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init();picInit();stage4Init()})();
 
 
 /* ---------- Google account sign-in & synced keys ---------- */
@@ -3444,7 +3519,7 @@ async function engConnected(hello){
     if(r&&r.state==='done')engShowQC(r.result);else if(r&&['queued','running'].includes(r.state)){ENG.jobs=jobs;engWaitRender(r.id)}}catch(e){}
 }
 function engShow(){
-  const on=ENG.on;$('#engOff').hidden=on;$('#stuFfmpegHelp').hidden=on;$('#stu_clean').closest('label').hidden=on;$('#engOn').hidden=!on;$('#engFiles').hidden=!on;$('#stuManual1').hidden=on;
+  const on=ENG.on;if($('#picOn')){$('#picOn').hidden=!on;$('#picOff').hidden=on}$('#engOff').hidden=on;$('#stuFfmpegHelp').hidden=on;$('#stu_clean').closest('label').hidden=on;$('#engOn').hidden=!on;$('#engFiles').hidden=!on;$('#stuManual1').hidden=on;
   $('#stuStep2').hidden=on;$('#engSoundOn').hidden=!on;$('#engSoundOff').hidden=on;$('#engRenderBox').hidden=!on;
   $('#engAudioRow').hidden=!STU.settings.separate;
   $('#engVideoPath').textContent=STU.engVideo?`${baseName(STU.engVideo)} — ${STU.engVideo}`:'No video chosen';
@@ -3562,8 +3637,8 @@ async function engClean(){
 /* ---------- step 8: render + quality check ---------- */
 function engRenderParams(){
   const keep=keepSegments(),hasText=STU.words.length>0;
-  const reels=STU.reels.map((r,i)=>{const segs=clipSegs(keep,r.start,r.end);return segs.length?{name:`Reel ${String(i+1).padStart(2,'0')} - ${safeName(r.title)}`,start:r.start,end:r.end,segs,ass:STU.settings.reelCaps&&hasText?makeAss(segs):''}:null}).filter(Boolean);
-  return engParams({keep,reels,srt:hasText?makeSrt(keep):'',settings:{res:STU.settings.res,enc:STU.settings.enc,reelRes:STU.settings.reelRes,reelCaps:STU.settings.reelCaps,xfade_ms:STU.settings.xfade??40},chapters:typeof chaptersText==='function'?chaptersText():''});
+  const reels=STU.reels.map((r,i)=>{const segs=clipSegs(keep,r.start,r.end);return segs.length?{name:`Reel ${String(i+1).padStart(2,'0')} - ${safeName(r.title)}`,start:r.start,end:r.end,segs,ass:STU.settings.reelCaps&&hasText?picReelAss(segs):''}:null}).filter(Boolean);
+  return engParams({keep,reels,srt:hasText?makeSrt(keep):'',settings:{res:STU.settings.res,enc:STU.settings.enc,reelRes:STU.settings.reelRes,reelCaps:STU.settings.reelCaps,xfade_ms:STU.settings.xfade??40,...picRenderSettings()},covers:picCovers(),youtube:typeof ytFullText==='function'?ytFullText():'',chapters:typeof chaptersText==='function'?chaptersText():''});
 }
 async function engRender(){
   if(!engNeed(true))return;
@@ -3794,6 +3869,187 @@ function stage2Init(){
   $('#stuChapCopy').addEventListener('click',()=>{const t=chaptersText();navigator.clipboard.writeText(t).then(()=>stuSay('#stuChapStatus','Copied — paste into the YouTube description.')).catch(()=>prompt('Copy:',t))});
   stuRenderChapters();
   if(STU.anaFile&&ENG.on)fetch(engFileUrl(STU.anaFile)).then(r=>r.json()).then(d=>{anaSet(d);stuStats()}).catch(()=>{});
+}
+
+/* =====================================================================
+   STUDIO · STAGE 3 — picture: framing, covers, captions, colour
+   ===================================================================== */
+
+/* ---------- 11. word-by-word ("karaoke") captions for Reels ---------- */
+const CAP_STYLES={
+  gold:{hi:'&H0048AEE0',label:'Gold highlight'},   // ASS colours are &HAABBGGRR
+  white:{hi:'&H00FFFFFF',label:'White'},
+  yellow:{hi:'&H0000E5FF',label:'Yellow highlight'},
+};
+/* One line at a time (max ~3 words / 22 characters for big readable text), current word highlighted.
+   Placed above Instagram's bottom buttons and caption (safe zone), away from the right-hand icons. */
+function makeAssWords(segs,opt={}){
+  const W=1080,H=1920,st=CAP_STYLES[opt.style||'gold']||CAP_STYLES.gold,size=opt.size||84,upper=!!opt.upper;
+  const m=mapper(segs),out=[];let cur=[];
+  const words=[];STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd)return;const s=m.map(w.s),e=m.map(w.e);if(s==null||e==null)return;words.push({w:w.w,s,e})});
+  const flush=()=>{if(cur.length)out.push(cur);cur=[]};
+  words.forEach((w,i)=>{const prev=cur[cur.length-1];const len=cur.map(x=>x.w).join(' ').length+w.w.length;
+    if(prev&&(w.s-prev.e>0.6||cur.length>=3||len>22))flush();cur.push(w);if(/[.?!]$/.test(w.w))flush()});flush();
+  const fmt=t=>assT(Math.max(0,t));const clean=s=>(upper?s.toUpperCase():s).replace(/[{}\\]/g,'');
+  const lines=[];
+  out.forEach((ch,ci)=>{const end=ci+1<out.length?Math.min(out[ci+1][0].s,ch[ch.length-1].e+0.6):ch[ch.length-1].e+0.6;
+    ch.forEach((w,k)=>{const s=k?w.s:Math.min(w.s,ch[0].s),e=k+1<ch.length?ch[k+1].s:end;if(e-s<0.02)return;
+      const text=ch.map((x,j)=>j===k?`{\\c${st.hi}\\fscx108\\fscy108}${clean(x.w)}{\\c&H00FFFFFF\\fscx100\\fscy100}`:clean(x.w)).join(' ');
+      lines.push(`Dialogue: 0,${fmt(s)},${fmt(e)},Words,,0,0,0,,${text}`)})});
+  const marginV=Math.round(H*0.30);  // clear of the bottom 30% (caption, buttons, progress bar)
+  return `[Script Info]\nScriptType: v4.00+\nPlayResX: ${W}\nPlayResY: ${H}\nWrapStyle: 2\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Words,Arial,${size},&H00FFFFFF,&H00FFFFFF,&H00101010,&H78000000,1,0,0,0,100,100,0,0,1,6,2,2,90,150,${marginV},1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n${lines.join('\n')}\n`;
+}
+
+/* ---------- settings ---------- */
+const PIC_DEFAULTS={layout:'crop169',punch:1.18,capStyle:'gold',capUpper:false,colour:{auto:true,brightness:0,contrast:1,saturation:1,warmth:0}};
+function pic(){const p=STU.settings.pic||{};return {...PIC_DEFAULTS,...p,colour:{...PIC_DEFAULTS.colour,...(p.colour||{})}}}
+const parseTime=s=>{s=String(s||'').trim();if(!s)return NaN;const p=s.split(':').map(Number);if(p.some(isNaN))return NaN;return p.reduce((a,x)=>a*60+x,0)};
+const showTime=t=>{t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
+function picOverrides(){return (STU.frames||[]).filter(f=>f.end>f.start).map(f=>({start:f.start,end:f.end,...(f.zoom!=='auto'?{zoom:+f.zoom}:{}),...(f.hold?{hold:true}:{})}))}
+function picRenderSettings(){const p=pic();return {layout:p.layout,punch:+p.punch,reelPunch:+p.punch>1?1.12:1,colour:p.colour,framing_overrides:picOverrides()}}
+function picCovers(){return (STU.covers||[]).filter(c=>c.end>c.start).map(c=>({start:c.start,end:c.end,mode:c.mode,file:c.file||null,title:c.title||'',from:c.from??null}))}
+function picReelAss(segs){const p=pic();return p.capStyle==='simple'?makeAss(segs):makeAssWords(segs,{style:p.capStyle,upper:p.capUpper})}
+
+/* ---------- UI ---------- */
+function picUi(){
+  const p=pic();$('#pic_layout').value=p.layout;$('#pic_punch').value=String(p.punch);$('#pic_auto').checked=p.colour.auto;
+  ['brightness','contrast','saturation','warmth'].forEach(k=>{$('#pic_'+k).value=p.colour[k];$('#pic_'+k+'Val').textContent=(k==='brightness'||k==='warmth'?(p.colour[k]>0?'+':''):'')+(+p.colour[k]).toFixed(2)});
+  $('#pic_capStyle').value=p.capStyle;$('#pic_capUpper').checked=p.capUpper;
+  $('#picOn').hidden=!ENG.on;$('#picOff').hidden=ENG.on;
+  if(STU.facesPct!=null)stuSay('#picFacesStatus',`Speaker found: face visible in ${STU.facesPct}% of the video ✓`);
+  picCoversRender();
+}
+function picSave(){
+  const c={auto:$('#pic_auto').checked};['brightness','contrast','saturation','warmth'].forEach(k=>c[k]=+$('#pic_'+k).value);
+  STU.settings.pic={layout:$('#pic_layout').value,punch:+$('#pic_punch').value,capStyle:$('#pic_capStyle').value,capUpper:$('#pic_capUpper').checked,colour:c};
+  stuSave();picUi();
+}
+function picCoversRender(){
+  const box=$('#picCovers');const cs=STU.covers||[];
+  box.innerHTML=cs.map((c,i)=>`<div class="cover-row">
+    <input data-cv="${i}" data-k="start" value="${showTime(c.start)}" aria-label="From (m:ss)" title="From (m:ss)">
+    <input data-cv="${i}" data-k="end" value="${showTime(c.end)}" aria-label="To (m:ss)" title="To (m:ss)">
+    <select data-cv="${i}" data-k="mode"><option value="auto"${c.mode==='auto'?' selected':''}>Other moments where the speaker is silent</option><option value="file"${c.mode==='file'?' selected':''}>My photo or video…</option><option value="title"${c.mode==='title'?' selected':''}>Title card</option></select>
+    <button class="btn small" data-cvdel="${i}" title="Remove">✕</button>
+    <div class="cover-extra">${c.mode==='file'?`<button class="btn small" data-cvpick="${i}">Choose photo/video…</button><span class="status">${esc(c.file?baseName(c.file):'nothing chosen')}</span>`:''}${c.mode==='title'?`<input data-cv="${i}" data-k="title" value="${esc(c.title||'')}" placeholder="Title text, e.g. Divine Light Meditation" style="flex:1">`:''}${c.mode==='auto'?'<span class="status">If there are no silent moments long enough, a title card is used.</span>':''}</div></div>`).join('')||'<p class="status">Nothing covered.</p>';
+}
+function picFramesRender(){
+  const fs=STU.frames||[];
+  $('#picFrames').innerHTML=fs.map((f,i)=>`<div class="cover-row">
+    <input data-fr="${i}" data-k="start" value="${showTime(f.start)}" aria-label="From (m:ss)" title="From (m:ss)">
+    <input data-fr="${i}" data-k="end" value="${showTime(f.end)}" aria-label="To (m:ss)" title="To (m:ss)">
+    <select data-fr="${i}" data-k="zoom"><option value="auto"${f.zoom==='auto'?' selected':''}>Automatic</option><option value="1"${f.zoom==='1'?' selected':''}>Wide (no close-up)</option><option value="1.18"${f.zoom==='1.18'?' selected':''}>Close-up</option><option value="1.3"${f.zoom==='1.3'?' selected':''}>Tight close-up</option></select>
+    <button class="btn small" data-frdel="${i}" title="Remove">✕</button>
+    <div class="cover-extra"><label class="check" style="margin:0"><input type="checkbox" data-fr="${i}" data-k="hold"${f.hold?' checked':''}> Hold the camera still in this section</label></div></div>`).join('')||'<p class="status">Nothing set by hand.</p>';
+}
+function picInit(){
+  picFramesRender();
+  $('#picFrameAdd').addEventListener('click',()=>{const v=stuVideo(),t=v&&v.currentTime>0?v.currentTime:0;STU.frames=[...(STU.frames||[]),{start:t,end:t+30,zoom:'auto',hold:false}];stuSave();picFramesRender()});
+  $('#picFrames').addEventListener('change',e=>{const i=e.target.dataset.fr;if(i==null)return;const f=STU.frames[+i],k=e.target.dataset.k;
+    if(k==='start'||k==='end'){const t=parseTime(e.target.value);if(isNaN(t)){alert('Write the time as minutes:seconds, e.g. 1:00');setTimeout(picFramesRender,0);return}f[k]=t}
+    else if(k==='hold')f.hold=e.target.checked;else f[k]=e.target.value;
+    if(f.end<=f.start)stuSay('#picStatus',`Section ${+i+1}: the end must be after the start.`);stuSave();setTimeout(picFramesRender,0)});
+  $('#picFrames').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.dataset.frdel!=null){STU.frames.splice(+b.dataset.frdel,1);stuSave();picFramesRender()}});
+  STU.settings.pic=pic();picUi();
+  ['pic_layout','pic_punch','pic_auto','pic_capStyle','pic_capUpper'].forEach(id=>$('#'+id).addEventListener('change',picSave));
+  ['brightness','contrast','saturation','warmth'].forEach(k=>$('#pic_'+k).addEventListener('input',picSave));
+  $('#picReset').addEventListener('click',()=>{STU.settings.pic={...pic(),colour:{...PIC_DEFAULTS.colour}};stuSave();picUi()});
+  $('#picFaces').addEventListener('click',async()=>{
+    if(!engNeed())return;if(!STU.engPrep){alert('Press “Prepare” in step 1 first.');return}
+    stuSay('#picFacesStatus','The engine is looking at the picture (see progress above)…');
+    try{const r=await engRun('faces',{video:STU.engVideo});STU.facesPct=r.seen_pct;stuSave();
+      stuSay('#picFacesStatus',r.seen_pct>=60?`Speaker found: face visible in ${r.seen_pct}% of the video ✓`:`Face visible in only ${r.seen_pct}% of the video — framing will stay mostly centred.`)}
+    catch(e){stuSay('#picFacesStatus',e.message)}});
+  const still=async closeup=>{
+    if(!engNeed())return;const v=stuVideo(),t=v&&v.currentTime>0?v.currentTime:Math.max(0,(STU.dur||60)*0.25);
+    stuSay('#picStatus',`Making a still at ${fmtT(t)}…`);
+    try{const r=await engRun('frame',{video:STU.engVideo,t,closeup,settings:{res:'1080',...picRenderSettings()}});
+      const img=$('#picStill');img.src=engFileUrl(r.frame);img.hidden=false;stuSay('#picStatus',`Still at ${fmtT(t)}${closeup?' (close-up)':''}, ${r.size[0]}×${r.size[1]}. Move the video player and press again to check other moments.`)}
+    catch(e){stuSay('#picStatus',e.message)}};
+  $('#picPreview').addEventListener('click',()=>still(false));$('#picPreviewClose').addEventListener('click',()=>still(true));
+  $('#picCoverAdd').addEventListener('click',()=>{const v=stuVideo(),t=v&&v.currentTime>0?v.currentTime:0;STU.covers=[...(STU.covers||[]),{start:t,end:t+(t?10:60),mode:'auto'}];stuSave();picCoversRender()});
+  $('#picCovers').addEventListener('change',e=>{const i=e.target.dataset.cv;if(i==null)return;const c=STU.covers[+i],k=e.target.dataset.k;
+    if(k==='start'||k==='end'){const t=parseTime(e.target.value);if(isNaN(t)){alert('Write the time as minutes:seconds, e.g. 1:00');setTimeout(picCoversRender,0);return}c[k]=t}else c[k]=e.target.value;
+    if(c.end<=c.start)stuSay('#picStatus',`Cover ${+i+1}: the end (${showTime(c.end)}) must be after the start (${showTime(c.start)}).`);
+    stuSave();setTimeout(picCoversRender,0)});  // redraw after the field has finished losing focus
+  $('#picCovers').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.cvdel!=null){STU.covers.splice(+b.dataset.cvdel,1);stuSave();picCoversRender()}
+    if(b.dataset.cvpick!=null){try{const d=await engFetch('/api/pick',{method:'POST',body:{kind:'cover'}});if(d.path){STU.covers[+b.dataset.cvpick].file=d.path;stuSave();picCoversRender()}}catch(err){alert(err.message)}}});
+}
+
+/* =====================================================================
+   STUDIO · STAGE 4 — YouTube package (title, description, tags) and thumbnails
+   ===================================================================== */
+function ytEditedText(maxChars){
+  const out=[];let n=0;STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd||n>maxChars)return;out.push(w.w);n+=w.w.length+1});return out.join(' ');
+}
+function ytFullText(){
+  const y=STU.yt||{};const parts=[];
+  if(y.title)parts.push(y.title);
+  if(y.description)parts.push(y.description);
+  const ch=typeof chaptersText==='function'?chaptersText():'';if(ch)parts.push(ch);
+  if(y.tags)parts.push('Tags: '+y.tags);
+  return parts.join('\n\n');
+}
+async function ytWrite(){
+  if(!STU.words.length){stuSay('#ytStatus','Transcribe first (step 5).');return}
+  stuSay('#ytStatus','Asking AI for a title, description and tags…');
+  try{
+    const got=await askAny(`Below is the edited transcript of a recorded spiritual talk (Pranahuti Yoga / Sahaj Marg tradition, channel "Divine Light Meditation").
+Write YouTube metadata that is respectful, clear and true to the talk (no clickbait, no invented claims, keep any quoted wording exact):
+- "titles": 5 title options, each under 70 characters;
+- "description": 2 short paragraphs (what the talk is about, who it is for), then one line inviting viewers to try meditation; no hashtags, no chapter list (it is added separately);
+- "tags": 10 to 15 tags.
+Reply with only JSON: {"titles":["..."],"description":"...","tags":["..."]}
+
+TRANSCRIPT:
+${ytEditedText(24000)}`,{json:true,onStatus:t=>stuSay('#ytStatus',t)});
+    const d=parseJSON(got.text);
+    STU.yt={titles:(d.titles||[]).slice(0,6).map(t=>String(t).slice(0,100)),title:String((d.titles||[])[0]||'').slice(0,100),description:String(d.description||''),tags:(d.tags||[]).map(String).join(', ')};
+    stuSave();ytRender();stuSay('#ytStatus',`Written with ${PROVIDERS[got.pid].label}. Pick a title and edit anything you like; chapters are added to the description automatically.`);
+  }catch(e){stuSay('#ytStatus',errMsg(e))}
+}
+function ytRender(){
+  const y=STU.yt||{};
+  $('#ytTitles').innerHTML=(y.titles||[]).map((t,i)=>`<label class="check"><input type="radio" name="ytTitle" value="${i}"${t===y.title?' checked':''}> ${esc(t)}</label>`).join('');
+  $('#ytTitle').value=y.title||'';$('#ytDesc').value=y.description||'';$('#ytTags').value=y.tags||'';
+  const ch=typeof chaptersText==='function'?chaptersText():'';$('#ytChapNote').textContent=ch?`+ ${ch.split('\n').length} chapters added at the end`:'(no chapters yet — step 7)';
+  const n=(y.title||'').length;$('#ytTitleCount').textContent=n?`${n}/100 characters${n>70?' — long titles get cut off on phones':''}`:'';
+}
+
+/* ---------- thumbnails ---------- */
+let TH={img:null,file:null};
+async function thSuggest(){
+  if(!engNeed())return;stuSay('#thStatus','The engine is choosing the best moments (see progress above)…');
+  try{const r=await engRun('thumbs',{video:STU.engVideo,n:6,settings:picRenderSettings()});
+    $('#thGrid').innerHTML=r.thumbs.map((t,i)=>`<button class="th-pick" data-th="${esc(t.file)}" title="${fmtT(t.t)}"><img src="${engFileUrl(t.file)}" alt="Moment at ${fmtT(t.t)}"></button>`).join('');
+    stuSay('#thStatus','Click a picture to design the thumbnail.')}
+  catch(e){stuSay('#thStatus',e.message)}
+}
+function thDraw(){
+  const c=$('#thCanvas'),x=c.getContext('2d');x.clearRect(0,0,1280,720);
+  if(TH.img)x.drawImage(TH.img,0,0,1280,720);else{x.fillStyle='#222';x.fillRect(0,0,1280,720)}
+  const text=($('#thText').value||'').trim(),font=$('#thFont').value,pos=$('#thPos').value,col=$('#thColour').value;
+  if(!text)return;
+  const g=pos==='left'?x.createLinearGradient(0,0,760,0):x.createLinearGradient(0,720,0,330);
+  g.addColorStop(0,'rgba(0,0,0,0.72)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,1280,720);
+  const maxW=pos==='left'?620:1160;let size=120;const lines=t=>{const words=t.split(/\s+/),out=[];let cur='';for(const w of words){const tr=cur?cur+' '+w:w;if(x.measureText(tr).width>maxW&&cur){out.push(cur);cur=w}else cur=tr}if(cur)out.push(cur);return out};
+  let ls;do{x.font=`700 ${size}px '${font}'`;ls=lines(text);size-=4}while((ls.length>3||ls.some(l=>x.measureText(l).width>maxW))&&size>40);
+  const lh=size*1.12;x.fillStyle=col;x.strokeStyle='rgba(0,0,0,0.85)';x.lineWidth=Math.max(4,size/12);x.lineJoin='round';x.textBaseline='alphabetic';
+  ls.forEach((l,i)=>{const y=pos==='left'?360-(ls.length*lh)/2+lh*(i+0.8):690-lh*(ls.length-1-i)-20,xx=pos==='left'?60:640;x.textAlign=pos==='left'?'left':'center';x.strokeText(l,xx,y);x.fillText(l,xx,y)});
+}
+function stage4Init(){
+  $('#ytWrite').addEventListener('click',ytWrite);
+  $('#ytTitles').addEventListener('change',e=>{const i=+e.target.value;STU.yt.title=STU.yt.titles[i];stuSave();setTimeout(ytRender,0)});
+  [['#ytTitle','title'],['#ytDesc','description'],['#ytTags','tags']].forEach(([id,k])=>$(id).addEventListener('input',e=>{STU.yt={...(STU.yt||{}),[k]:e.target.value};stuSave();if(k==='title')ytRender()}));
+  $('#ytCopy').addEventListener('click',()=>{const t=ytFullText();navigator.clipboard.writeText(t).then(()=>stuSay('#ytStatus','Copied — paste it into YouTube Studio.')).catch(()=>prompt('Copy:',t))});
+  $('#thSuggestBtn').addEventListener('click',thSuggest);
+  $('#thGrid').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(!b)return;const img=new Image();img.crossOrigin='anonymous';
+    img.onload=()=>{TH.img=img;TH.file=b.dataset.th;if(!$('#thText').value)$('#thText').value=(STU.yt&&STU.yt.title)||'';$('#thDesign').hidden=false;$('#thFont').dispatchEvent(new Event('input'))};img.src=engFileUrl(b.dataset.th)});
+  const redraw=()=>{const f=$('#thFont').value;(document.fonts&&document.fonts.load?document.fonts.load(`700 60px '${f}'`):Promise.resolve()).catch(()=>{}).then(thDraw)};
+  ['thText','thFont','thPos','thColour'].forEach(id=>$('#'+id).addEventListener('input',redraw));
+  $('#thSave').addEventListener('click',()=>$('#thCanvas').toBlob(b=>saveBlob(b,'YouTube thumbnail.jpg'),'image/jpeg',0.92));
+  ytRender();
 }
 
 </script>

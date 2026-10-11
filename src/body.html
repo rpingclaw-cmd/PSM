@@ -389,10 +389,71 @@
         <p class="status" id="stuChapWarn" style="color:var(--warn)"></p>
       </fieldset>
 
-      <fieldset><legend>8 · Make the final files</legend>
+      <fieldset id="stuPicture"><legend>8 · Picture</legend>
+        <p class="hint" id="picOff">Needs the Studio Engine (top of this tab).</p>
+        <div id="picOn" hidden>
+          <div class="under" style="margin:0 0 6px"><button class="btn small primary" id="picFaces">Find the speaker (face tracking)</button></div>
+          <p class="status" id="picFacesStatus"></p>
+          <div class="row">
+            <label class="f"><span>Shape of the full video</span><select id="pic_layout"><option value="crop169">YouTube 16:9 — follows the speaker (recommended)</option><option value="blur169">YouTube 16:9 — whole picture, blurred sides</option><option value="original">Same as recorded (vertical)</option></select></label>
+            <label class="f"><span>Close-up at every cut (hides jump cuts)</span><select id="pic_punch"><option value="1">None</option><option value="1.1">Gentle (110%)</option><option value="1.18">Standard (118%, recommended)</option><option value="1.25">Strong (125%)</option></select></label>
+          </div>
+          <h4 class="group-title">Colour</h4>
+          <label class="check"><input type="checkbox" id="pic_auto"> Match colour and brightness automatically between parts</label>
+          <div class="row">
+            <label class="f"><span>Brightness <strong id="pic_brightnessVal"></strong></span><input type="range" id="pic_brightness" min="-0.15" max="0.15" step="0.01"></label>
+            <label class="f"><span>Contrast <strong id="pic_contrastVal"></strong></span><input type="range" id="pic_contrast" min="0.8" max="1.25" step="0.01"></label>
+            <label class="f"><span>Warmth <strong id="pic_warmthVal"></strong></span><input type="range" id="pic_warmth" min="-1" max="1" step="0.05"></label>
+            <label class="f"><span>Colour strength <strong id="pic_saturationVal"></strong></span><input type="range" id="pic_saturation" min="0.6" max="1.5" step="0.02"></label>
+          </div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small" id="picPreview">Show a still here (as it will look)</button><button class="btn small" id="picPreviewClose">…as a close-up</button><button class="btn small" id="picReset">Reset colour</button></div>
+          <img id="picStill" alt="Preview still" hidden style="width:100%;max-width:640px;border-radius:8px;display:block;margin-bottom:8px">
+          <p class="status" id="picStatus"></p>
+          <h4 class="group-title">Framing by hand (optional)</h4>
+          <p class="hint" style="margin:0 0 8px">Automatic framing is usually right. For a section where you want something else, add it here.</p>
+          <div id="picFrames"></div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small" id="picFrameAdd">＋ Add a section</button></div>
+          <h4 class="group-title">Cover parts of the video</h4>
+          <p class="hint" style="margin:0 0 8px">For parts where the picture is unusable (for example the first minute). The sound keeps playing; the picture is replaced, with soft dissolves.</p>
+          <div id="picCovers"></div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small" id="picCoverAdd">＋ Add a cover range</button></div>
+          <h4 class="group-title">Reel captions</h4>
+          <div class="row">
+            <label class="f"><span>Style</span><select id="pic_capStyle"><option value="gold">Word by word — gold highlight</option><option value="yellow">Word by word — yellow highlight</option><option value="white">Word by word — white</option><option value="simple">Simple lines</option></select></label>
+            <label class="check" style="align-self:end;margin-bottom:16px"><input type="checkbox" id="pic_capUpper"> CAPITAL LETTERS</label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="stuYouTube"><legend>9 · YouTube package</legend>
+        <div class="under" style="margin:0 0 8px"><button class="btn small primary" id="ytWrite">✨ Write title, description and tags (AI)</button><button class="btn small" id="ytCopy">Copy all for YouTube</button></div>
+        <p class="status" id="ytStatus"></p>
+        <div id="ytTitles"></div>
+        <label class="f"><span>Title <span class="status" id="ytTitleCount"></span></span><input id="ytTitle" maxlength="100"></label>
+        <label class="f"><span>Description <span class="status" id="ytChapNote"></span></span><textarea id="ytDesc" rows="5"></textarea></label>
+        <label class="f"><span>Tags (comma separated)</span><input id="ytTags"></label>
+        <h4 class="group-title">Thumbnail</h4>
+        <div class="under" style="margin:0 0 8px"><button class="btn small" id="thSuggestBtn">Suggest thumbnail pictures (Studio Engine)</button></div>
+        <p class="status" id="thStatus"></p>
+        <div id="thGrid" class="th-grid"></div>
+        <div id="thDesign" hidden>
+          <canvas id="thCanvas" width="1280" height="720" style="width:100%;max-width:640px;border-radius:8px;display:block;margin:8px 0"></canvas>
+          <div class="row">
+            <label class="f"><span>Words on the thumbnail (short is best: 2–5 words)</span><input id="thText"></label>
+            <label class="f"><span>Font</span><select id="thFont"><option>Montserrat</option><option>Playfair Display</option><option>Cinzel</option><option>Marcellus</option><option>Cormorant Garamond</option><option>Lora</option></select></label>
+          </div>
+          <div class="row">
+            <label class="f"><span>Place</span><select id="thPos"><option value="bottom">Bottom</option><option value="left">Left side</option></select></label>
+            <label class="f"><span>Colour</span><select id="thColour"><option value="#FFFFFF">White</option><option value="#F2C14E">Gold</option><option value="#FFE14D">Yellow</option></select></label>
+          </div>
+          <div class="under" style="margin:0 0 8px"><button class="btn small primary" id="thSave">Download thumbnail (1280×720)</button></div>
+        </div>
+      </fieldset>
+
+      <fieldset><legend>10 · Make the final files</legend>
         <div class="row">
           <label class="f"><span>Sound cleanup</span><select id="stu_clean"><option value="light">Light — keep it natural</option><option value="standard">Standard — podcast clarity (recommended)</option><option value="strong">Strong — noisy room (AI noise removal)</option><option value="none">Loudness only</option></select></label>
-          <label class="f"><span>Full video size</span><select id="stu_res"><option value="orig">Original (4K)</option><option value="1440">1440p</option><option value="1080">1080p (faster, smaller)</option></select></label>
+          <label class="f"><span>Full video size</span><select id="stu_res"><option value="1080">1080p (recommended)</option><option value="1440">1440p</option><option value="2160">4K (enlarged from the phone picture, slow)</option><option value="orig">Original size</option></select></label>
         </div>
         <div class="row">
           <label class="f"><span>Speed</span><select id="stu_enc"><option value="auto">Automatic — best for this computer (Studio Engine)</option><option value="cpu">Normal (works on every computer)</option><option value="mac">Fast — Mac</option><option value="nvidia">Fast — NVIDIA graphics</option><option value="intel">Fast — Intel graphics</option><option value="amd">Fast — AMD graphics</option></select></label>
@@ -401,7 +462,7 @@
         <label class="check"><input type="checkbox" id="stu_reelCaps"> Burn captions into Reels</label>
         <div id="engRenderBox" hidden>
           <div class="under" style="margin:8px 0"><button class="btn primary" id="engRenderBtn">Make the final files on this computer</button><button class="btn small" id="engOpenFolder" hidden>Open the folder</button></div>
-          <p class="hint">Made next to your video: <em>Edited - full video.mp4</em>, the podcast (<em>.mp3</em> + <em>.wav</em>), captions (<em>.srt</em>), every Reel, and a quality check. On a laptop, choose 1080p: a 1-hour talk takes roughly 1–3 hours. You can close the browser; the engine keeps working. If it is interrupted, press Resume — finished parts are kept.</p>
+          <p class="hint">Made next to your video: <em>Edited - full video.mp4</em>, the podcast (<em>.mp3</em> + <em>.wav</em>), captions (<em>.srt</em> + <em>.vtt</em>), chapters and YouTube text, every Reel, a timeline for DaVinci Resolve (<em>.fcpxml</em>) and a cut list (<em>.edl</em>) for fine-tuning by hand, and a quality check (lip sync, loudness, black or frozen picture, caption timing). On a laptop, choose 1080p: a 1-hour talk takes roughly 1–3 hours. You can close the browser; the engine keeps working. If it is interrupted, press Resume — finished parts are kept.</p>
           <pre id="engQC" class="eng-qc" hidden></pre>
           <p class="status" style="margin:10px 0 0">Or, without the engine, download a render file:</p>
         </div>

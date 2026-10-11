@@ -1475,7 +1475,7 @@ $('#libXlsx').addEventListener('click',async()=>{
    STUDIO — podcast / talk editor. Heavy video work is done by ffmpeg on
    the user's own computer; the browser does sync, transcript, editing.
    ===================================================================== */
-const STU_DEFAULTS={clean:'standard',res:'orig',enc:'auto',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
+const STU_DEFAULTS={clean:'standard',res:'1080',enc:'auto',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
 let STU={videoName:'',audioName:'',videoFile:null,proxyFile:null,info:null,wavV:null,wavA:null,dur:0,sync:null,words:[],removed:{},reels:[],settings:{...STU_DEFAULTS},transcribed:false};
 const FILLERS=new Set(['um','umm','uh','uhh','erm','er','ah','hmm','mm','mmm','uhm']);
 function stuSay(id,t){const el=$(id);if(el)el.textContent=t}
@@ -1637,14 +1637,21 @@ function mapper(segs){const starts=[];let acc=0;for(const [a,b] of segs){starts.
   return {total:acc,map:t=>{for(let i=0;i<segs.length;i++){if(t>=segs[i][0]-1e-6&&t<=segs[i][1]+1e-6)return starts[i]+(t-segs[i][0])}return null}}}
 function captionChunks(segs,maxWords,maxChars){
   const m=mapper(segs),out=[];let cur=[];
-  const flush=()=>{if(!cur.length)return;const s=m.map(cur[0].s),e=m.map(cur[cur.length-1].e);if(s!=null&&e!=null&&e>s)out.push({s,e:Math.max(e,s+0.4),t:cur.map(w=>w.w).join(' ')});cur=[]};
-  STU.words.forEach((w,i)=>{if(STU.removed[i])return;const ms=m.map(w.s),me=m.map(w.e);if(ms==null||me==null){flush();return}
+  const flush=()=>{if(!cur.length)return;const s=m.map(cur[0].s),e=m.map(cur[cur.length-1].e);if(s!=null&&e!=null&&e>s)out.push({s,e:Math.max(e,s+0.8),t:cur.map(w=>w.w).join(' ')});cur=[]};
+  STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd)return;const ms=m.map(w.s),me=m.map(w.e);if(ms==null||me==null){flush();return}
     const prev=cur[cur.length-1];if(prev&&(w.s-prev.e>0.7||cur.length>=maxWords||(cur.map(x=>x.w).join(' ').length+w.w.length)>maxChars))flush();
     cur.push(w);if(/[.?!]$/.test(w.w))flush()});
-  flush();for(let i=0;i<out.length-1;i++)if(out[i].e>out[i+1].s)out[i].e=out[i+1].s;return out;
+  flush();
+  // let each caption stay up to 0.7 s longer into the following pause (easier to read), never overlapping
+  for(let i=0;i<out.length;i++){const next=i+1<out.length?out[i+1].s:Infinity;out[i].e=Math.min(next,out[i].e+0.7)}
+  for(let i=0;i<out.length-1;i++)if(out[i].e>out[i+1].s)out[i].e=out[i+1].s;return out;
 }
 const srtT=t=>{const ms=Math.round(t*1000),h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms%1000).padStart(3,'0')}`};
-function makeSrt(segs){return captionChunks(segs,10,60).map((c,i)=>`${i+1}\n${srtT(c.s)} --> ${srtT(c.e)}\n${c.t}\n`).join('\n')}
+/* at most 42 characters per line, 2 lines (broadcast readability rules); split near the middle */
+function wrap2(t){if(t.length<=42)return t;const w=t.split(' ');let best=null;
+  for(let k=1;k<w.length;k++){const a=w.slice(0,k).join(' '),b=w.slice(k).join(' ');const sc=Math.max(a.length,b.length);if(!best||sc<best.sc)best={a,b,sc}}
+  return best?best.a+'\n'+best.b:t}
+function makeSrt(segs){return captionChunks(segs,10,60).map((c,i)=>`${i+1}\n${srtT(c.s)} --> ${srtT(c.e)}\n${wrap2(c.t)}\n`).join('\n')}
 const assT=t=>{const cs=Math.round(t*100),h=Math.floor(cs/360000),m=Math.floor(cs%360000/6000),s=Math.floor(cs%6000/100);return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs%100).padStart(2,'0')}`};
 function makeAss(segs){
   const head=`[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\nWrapStyle: 0\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,74,&H00FFFFFF,&H00FFFFFF,&H00141414,&H96000000,-1,0,0,0,100,100,0,0,1,5,2,2,90,90,560,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
@@ -1683,7 +1690,7 @@ function vcodec(kind){
   return `-c:v libx264 -preset ${full?'veryfast':'medium'} -crf ${full?20:19}`;
 }
 function vfilter(kind){
-  const f=[];if(isHdr())f.push('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv');
+  const f=[];if(isHdr())f.push('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=mobius:desat=0,zscale=t=bt709:m=bt709:r=tv');
   if(kind==='reel'){const h=STU.settings.reelRes==='720'?1280:1920,w=h*9/16;f.push(`scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`)}
   else if(STU.settings.res!=='orig'){const s=+STU.settings.res;f.push(`scale=w='if(gt(iw,ih),-2,${s})':h='if(gt(iw,ih),${s},-2)'`)}
   f.push('format=yuv420p');return f.join(',');
@@ -1842,7 +1849,7 @@ function wireStudio(){
   $('#stuRenderMac').addEventListener('click',()=>downloadRender('mac').catch(e=>alert(e.message)));
   $('#stuSrt').addEventListener('click',()=>saveBlob(new Blob([makeSrt(keepSegments())],{type:'text/plain'}),'Edited - full video.srt'));
   $('#stuCsv').addEventListener('click',()=>{const k=keepSegments();saveBlob(new Blob(['part,start,end,length\n'+k.map(([s,e],i)=>`${i+1},${fmtT(s)},${fmtT(e)},${(e-s).toFixed(2)}`).join('\n')],{type:'text/csv'}),'cut-list.csv')});
-  $('#stuText2').addEventListener('click',()=>{const k=keepSegments(),m=mapper(k);saveBlob(new Blob([STU.words.filter((w,i)=>!STU.removed[i]).map(w=>w.w).join(' ')],{type:'text/plain'}),'Edited transcript.txt')});
+  $('#stuText2').addEventListener('click',()=>{const k=keepSegments(),m=mapper(k);saveBlob(new Blob([STU.words.filter((w,i)=>!STU.removed[i]&&!w.snd).map(w=>w.w).join(' ')],{type:'text/plain'}),'Edited transcript.txt')});
   $('#stuSaveProj').addEventListener('click',()=>{const {videoFile,proxyFile,wavV,wavA,...rest}=STU;saveBlob(new Blob([JSON.stringify(rest)],{type:'application/json'}),`studio-project-${todayStr()}.json`)});
   $('#stuLoadProj').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!('words' in d))throw 0;STU={...STU,...d,settings:{...STU_DEFAULTS,...(d.settings||{})}};await stuSave();stuRenderInfo();stuRenderTranscript()}catch(err){alert('That is not a Studio project file.')}e.target.value=''});
   $('#stuStop').addEventListener('click',()=>stuCtl&&stuCtl.abort());
@@ -1856,7 +1863,7 @@ async function stuPrep(os){
 }
 async function stuSuggest(){
   if(!STU.words.length){stuSay('#stuReelStatus','Transcribe first.');return}
-  const lines=[];let cur=[];STU.words.forEach((w,i)=>{if(STU.removed[i])return;cur.push(i);if(/[.?!]$/.test(w.w)||cur.length>40){lines.push(cur);cur=[]}});if(cur.length)lines.push(cur);
+  const lines=[];let cur=[];STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd)return;cur.push(i);if(/[.?!]$/.test(w.w)||cur.length>40){lines.push(cur);cur=[]}});if(cur.length)lines.push(cur);
   const text=lines.map((l,k)=>`[${k}] (${fmtT(STU.words[l[0]].s)}) ${l.map(i=>STU.words[i].w).join(' ')}`).join('\n');
   const n=Math.max(1,Math.min(15,+$('#stuReelCount').value||5));
   stuSay('#stuReelStatus','Asking AI for the best moments…');
@@ -1879,7 +1886,7 @@ ${text}`;
     stuSave();stuStats();stuSay('#stuReelStatus',`Added ${added} reel suggestion${added===1?'':'s'} (with ${PROVIDERS[got.pid].label}). Play them, rename or remove any.`);
   }catch(e){stuSay('#stuReelStatus',errMsg(e))}
 }
-(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init()})();
+(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init();picInit();stage4Init()})();
 
 
 /* ---------- Google account sign-in & synced keys ---------- */

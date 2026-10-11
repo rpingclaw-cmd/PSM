@@ -215,7 +215,7 @@ def job_report(ctx: Ctx, p: dict) -> dict:
 
 def tonemap_chain(v: dict | None) -> str:
     if is_hdr(v):
-        return ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,"
+        return ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=mobius:desat=0,"
                 "zscale=t=bt709:m=bt709:r=tv")
     return ""
 

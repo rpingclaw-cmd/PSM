@@ -1,6 +1,6 @@
 [project]
 name = "studio-engine"
-version = "0.1.0"
+version = "1.0.0"
 description = "Studio Engine: the local helper for the Daily Quote Cards Studio tab (runs on your own computer)."
 requires-python = ">=3.12"
 dependencies = [

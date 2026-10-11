@@ -46,7 +46,7 @@ async function engConnected(hello){
     if(r&&r.state==='done')engShowQC(r.result);else if(r&&['queued','running'].includes(r.state)){ENG.jobs=jobs;engWaitRender(r.id)}}catch(e){}
 }
 function engShow(){
-  const on=ENG.on;$('#engOff').hidden=on;$('#stuFfmpegHelp').hidden=on;$('#stu_clean').closest('label').hidden=on;$('#engOn').hidden=!on;$('#engFiles').hidden=!on;$('#stuManual1').hidden=on;
+  const on=ENG.on;if($('#picOn')){$('#picOn').hidden=!on;$('#picOff').hidden=on}$('#engOff').hidden=on;$('#stuFfmpegHelp').hidden=on;$('#stu_clean').closest('label').hidden=on;$('#engOn').hidden=!on;$('#engFiles').hidden=!on;$('#stuManual1').hidden=on;
   $('#stuStep2').hidden=on;$('#engSoundOn').hidden=!on;$('#engSoundOff').hidden=on;$('#engRenderBox').hidden=!on;
   $('#engAudioRow').hidden=!STU.settings.separate;
   $('#engVideoPath').textContent=STU.engVideo?`${baseName(STU.engVideo)} — ${STU.engVideo}`:'No video chosen';
@@ -164,8 +164,8 @@ async function engClean(){
 /* ---------- step 8: render + quality check ---------- */
 function engRenderParams(){
   const keep=keepSegments(),hasText=STU.words.length>0;
-  const reels=STU.reels.map((r,i)=>{const segs=clipSegs(keep,r.start,r.end);return segs.length?{name:`Reel ${String(i+1).padStart(2,'0')} - ${safeName(r.title)}`,start:r.start,end:r.end,segs,ass:STU.settings.reelCaps&&hasText?makeAss(segs):''}:null}).filter(Boolean);
-  return engParams({keep,reels,srt:hasText?makeSrt(keep):'',settings:{res:STU.settings.res,enc:STU.settings.enc,reelRes:STU.settings.reelRes,reelCaps:STU.settings.reelCaps,xfade_ms:STU.settings.xfade??40},chapters:typeof chaptersText==='function'?chaptersText():''});
+  const reels=STU.reels.map((r,i)=>{const segs=clipSegs(keep,r.start,r.end);return segs.length?{name:`Reel ${String(i+1).padStart(2,'0')} - ${safeName(r.title)}`,start:r.start,end:r.end,segs,ass:STU.settings.reelCaps&&hasText?picReelAss(segs):''}:null}).filter(Boolean);
+  return engParams({keep,reels,srt:hasText?makeSrt(keep):'',settings:{res:STU.settings.res,enc:STU.settings.enc,reelRes:STU.settings.reelRes,reelCaps:STU.settings.reelCaps,xfade_ms:STU.settings.xfade??40,...picRenderSettings()},covers:picCovers(),youtube:typeof ytFullText==='function'?ytFullText():'',chapters:typeof chaptersText==='function'?chaptersText():''});
 }
 async function engRender(){
   if(!engNeed(true))return;

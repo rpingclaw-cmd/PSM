@@ -37,7 +37,7 @@ HandBrake, MediaInfo for our use — **free, local, private, paid-tool quality**
 
 ## Features (must-have, in this order)
 ### Stage 1 — Foundation + audio (test: 10-min clip, then full hour)
-**Status: built and tested on synthetic media (see `engine/tests`). Waiting for the owner's real 10-minute clip.**
+**Status: built and tested on synthetic media (see `engine/tests`). Waiting for the owner's real 10-minute clip. resemble-enhance and a separate de-reverb were not added: they need GPU-class hardware and model downloads that could not be tested; DeepFilterNet's strength slider covers noise and some room echo.**
 1. Engine install + "connected" status in Studio tab; hardware report; job progress & cancel; resumable jobs.
 2. Media report (MediaInfo-like): codec, HDR, VFR, rotation, duration mismatch between files, audio level/clipping.
 3. Proxy: 540p CFR H.264 for smooth preview in the browser (generated automatically).
@@ -55,6 +55,7 @@ loudness map from the engine. (WhisperX/wav2vec2 could not be fetched or tested 
    keep natural breaths option, minimum pause setting, J/L-cut style audio crossfades (no clicks).
 8. Chapters (YouTube timestamps) suggested by AI from the transcript; editable.
 ### Stage 3 — Picture
+**Status: built and tested (real face photo test video). Face tracking = OpenCV YuNet (MediaPipe's current release no longer bundles a face model). Real-ESRGAN not included: 1080p output never needs enlarging (2160×1215 window → 1920×1080), and on the owner's laptop (no CUDA, small GPU) 4K upscaling would take many hours; 4K output uses high-quality lanczos scaling.**
 9. **Cover / B-roll ranges**: choose a timeline range (e.g. 0:00–1:00) to cover with video taken from elsewhere in the
    recording (auto-suggest moments where the speaker is listening / not talking, using face + voice activity), audio
    continues underneath; cross-dissolves; optional slow zoom or title card.
@@ -66,6 +67,7 @@ loudness map from the engine. (WhisperX/wav2vec2 could not be fetched or tested 
 12. Basic colour: auto exposure/white balance match between sections, sliders (brightness, contrast, warmth, saturation).
 13. Optional Real-ESRGAN upscale when output > source crop.
 ### Stage 4 — Output & polish
+**Status: built and tested. FCPXML 1.9 + CMX3600 EDL written for DaVinci Resolve; import into Resolve itself could not be tested on the build machine.**
 14. Exports: YouTube 16:9 (H.264 1080p or 4K), podcast (MP3 + WAV), Reels, SRT/VTT captions, chapters text,
     **FCPXML/EDL for DaVinci Resolve Free** (so a human can fine-tune), project file. Hardware encoders when available.
 15. YouTube package: AI title options, description with chapters, tags, thumbnail frame suggestions (face + clarity score).

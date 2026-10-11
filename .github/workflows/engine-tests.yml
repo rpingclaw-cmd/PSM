@@ -21,4 +21,4 @@ jobs:
         working-directory: engine
         run: uv run --frozen pytest -q tests
       - name: Browser logic tests (transcript line-up, sound map)
-        run: node tools/tests/test_studio2.mjs
+        run: node tools/tests/test_studio2.mjs && node tools/tests/test_studio3.mjs

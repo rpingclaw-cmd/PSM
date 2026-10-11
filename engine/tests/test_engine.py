@@ -153,3 +153,25 @@ def test_server_security(eng, media, prepared):
     assert c.get("/api/file", params={"path": media["video"], "t": "test-token"}).status_code == 404
     hw = c.get("/api/hardware", headers={"x-engine-token": "test-token"}).json()
     assert hw["best_encoder"] and hw["summary"]
+
+
+def test_hdr_to_normal_keeps_brightness_and_colour(tmp_path):
+    """A normal picture turned into real iPhone-style HDR (HLG) must come back looking like the original."""
+    from studio_engine import ff, media
+    src, hlg = tmp_path / "src.png", tmp_path / "hlg.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "smptehdbars=s=640x360", "-frames:v", "1",
+                    src], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf",
+                    "format=gbrpf32le,zscale=tin=iec61966-2-1:t=linear:npl=100,zscale=p=bt2020:t=arib-std-b67:"
+                    "m=bt2020nc:r=tv:pin=bt709:min=gbr,format=yuv420p10le", "-c:v", "libx265", "-x265-params",
+                    "log-level=error", "-color_primaries", "bt2020", "-color_trc", "arib-std-b67", "-colorspace",
+                    "bt2020nc", "-frames:v", "1", hlg], check=True)
+    v = media.stream(ff.probe(hlg), "video")
+    assert media.is_hdr(v) == "HLG"
+    raw = lambda args: np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", *args, "-f", "rawvideo", "-pix_fmt",
+                                                     "rgb24", "-"], capture_output=True).stdout, np.uint8).astype(float)
+    a = raw(["-i", str(src)])
+    b = raw(["-i", str(hlg), "-vf", media.tonemap_chain(v)])
+    assert len(a) == len(b)
+    assert abs(b.mean() - a.mean()) < 12, (a.mean(), b.mean())   # not darker / brighter
+    assert np.abs(b - a).mean() < 15                              # colours close to the original

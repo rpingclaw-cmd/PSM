@@ -17,7 +17,7 @@ exact clicks, never leave them with half-finished state. Spiritual content: quot
 
 ## Repo layout & build (IMPORTANT)
 - **Edit `src/`, never hand-edit `public/index.html`.** Then run `python3 tools/build.py` (assembles the single-file app:
-  head + CSS + embedded fonts + body + JS in order pre.js → themes2.js → draw.js → post.js → engine.js → studio2.js).
+  head + CSS + embedded fonts + body + JS in order pre.js → themes2.js → draw.js → post.js → engine.js → studio2.js → studio3.js → studio4.js).
 - `netlify/functions/api.mjs`, `netlify/functions/autopost.mjs`, `netlify/lib/shared.mjs` = server logic (shared by all hosts).
 - After any server change, rebuild the Worker bundle (committed file):
   `npx esbuild cloudflare/entry.mjs --bundle --format=esm --platform=neutral --target=es2022 --outfile=cloudflare/worker.js --alias:@netlify/blobs=./cloudflare/kvstore.mjs`
@@ -29,11 +29,16 @@ exact clicks, never leave them with half-finished state. Spiritual content: quot
 - Local helper the owner runs on their own computer (Python 3.13 via `uv`, FastAPI on 127.0.0.1:8765, ffmpeg,
   DeepFilterNet `deep-filter` binary). Browser side: `src/engine.js` (Studio tab). Pairing token arrives as
   `#engine=<token>` when the engine opens the site; requests carry `X-Engine-Token`.
-- Jobs: report, prepare, sync, clean, preview, render (+ lip-sync QC). Steps are resumable (`*.done.json` next to outputs
-  in `studio_work/`). Owner installs with `engine/install.ps1` (Windows) / `engine/install.sh` (Mac), which download
+- Jobs: report, prepare, sync, clean, preview, analyse (Silero VAD voice map), faces (YuNet), frame (preview still),
+  thumbs, render (pieces with framing / punch-ins / covers + dissolves, then QC: lip sync at 3 points, loudness,
+  black/frozen picture, captions; exports VTT, FCPXML, EDL, project). Steps are resumable (`*.done.json` next to
+  outputs in `studio_work/`). Browser side: `src/engine.js` (connection, jobs), `src/studio2.js` (transcript
+  line-up, sound map, chapters), `src/studio3.js` (picture, covers, word captions), `src/studio4.js` (YouTube, thumbs). Owner installs with `engine/install.ps1` (Windows) / `engine/install.sh` (Mac), which download
   the engine from this repo's `main` branch — so engine changes reach the owner when they re-run the installer.
-- Tests: `cd engine && STUDIO_DEEP_FILTER=/path/to/deep-filter uv run pytest -q tests` (synthetic media with a known
-  sync answer; sync and lip-sync must be < 5 ms). CI runs them on GitHub (without DeepFilterNet).
+- Tests: `cd engine && STUDIO_DEEP_FILTER=/path/to/deep-filter STUDIO_TEST_FACE=/path/face.jpg uv run pytest -q tests`
+  (synthetic media + espeak-ng voice with a known answer; sync and lip sync < 5 ms; face tests skip without a face photo),
+  `node tools/tests/test_studio2.mjs`, `node tools/tests/test_studio3.mjs`, and the browser test
+  `tools/tests/studio_ui_test.py` (Playwright; see its header). CI runs the first three on GitHub (no DeepFilterNet).
 - Owner's machine: Windows 11 laptop, i7-8550U (4 cores), 16 GB, NVIDIA 940MX (no NVENC) + Intel UHD 620 (Quick Sync),
   Smart App Control may be on. Keep defaults light (1080p renders, CPU-friendly).
 

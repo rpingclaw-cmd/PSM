@@ -7,6 +7,8 @@ KINDS = {
     "audio": ("Choose your separate audio recording",
               [("Audio", "*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.WAV *.MP3 *.M4A"), ("All files", "*.*")]),
     "transcript": ("Choose your transcript", [("Text", "*.txt *.docx *.srt *.vtt"), ("All files", "*.*")]),
+    "cover": ("Choose a photo or video for the covered part",
+              [("Photos and videos", "*.jpg *.jpeg *.png *.webp *.mp4 *.mov *.m4v *.JPG *.PNG *.MOV *.MP4"), ("All files", "*.*")]),
     "any": ("Choose a file", [("All files", "*.*")]),
 }
 

@@ -46,3 +46,10 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
 .stu-w.extra{color:var(--muted);font-style:italic}
 .stu-w.flash{outline:2px solid var(--accent);outline-offset:2px}
 .chap{display:grid;grid-template-columns:62px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.cover-row{display:grid;grid-template-columns:90px 90px 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.cover-row .cover-extra{grid-column:1/-1;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+@media (max-width:520px){.cover-row{grid-template-columns:1fr 1fr}.cover-row select{grid-column:1/-1}}
+.th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:8px}
+.th-pick{padding:0;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:none;cursor:pointer}
+.th-pick:hover,.th-pick:focus-visible{border-color:var(--accent)}
+.th-pick img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
