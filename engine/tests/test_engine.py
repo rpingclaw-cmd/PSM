@@ -175,3 +175,24 @@ def test_hdr_to_normal_keeps_brightness_and_colour(tmp_path):
     assert len(a) == len(b)
     assert abs(b.mean() - a.mean()) < 12, (a.mean(), b.mean())   # not darker / brighter
     assert np.abs(b - a).mean() < 15                              # colours close to the original
+
+
+def test_opens_in_google_chrome(tmp_path, monkeypatch):
+    """The website opens in Google Chrome when it is installed (Windows paths), else the default browser."""
+    from studio_engine import config, server
+    calls = []
+    monkeypatch.setattr(server.subprocess, "Popen", lambda cmd, **kw: calls.append(("chrome", cmd)))
+    monkeypatch.setattr(server.webbrowser, "open", lambda link: calls.append(("default", link)))
+    monkeypatch.setattr(config, "IS_WIN", True)
+    monkeypatch.setattr(config, "IS_MAC", False)
+    exe = tmp_path / "Google" / "Chrome" / "Application" / "chrome.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    monkeypatch.setenv("PROGRAMFILES", str(tmp_path))
+    server.open_site("https://example/#engine=x")
+    assert calls[-1] == ("chrome", [str(exe), "https://example/#engine=x"])
+    exe.unlink()
+    for k in ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA"):
+        monkeypatch.setenv(k, str(tmp_path / "none"))
+    server.open_site("https://example/#engine=y")
+    assert calls[-1] == ("default", "https://example/#engine=y")

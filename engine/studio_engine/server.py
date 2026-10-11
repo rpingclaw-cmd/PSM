@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -240,6 +241,37 @@ def open_folder(body: dict = Body(...)):
 
 
 # ---------------- start ----------------
+def find_chrome() -> list[str] | None:
+    """Google Chrome, if installed (the owner prefers it; it also plays the preview video)."""
+    if config.IS_WIN:
+        roots = [os.environ.get(k, "") for k in ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA")]
+        for r in roots:
+            exe = Path(r) / "Google" / "Chrome" / "Application" / "chrome.exe"
+            if r and exe.is_file():
+                return [str(exe)]
+        return None
+    if config.IS_MAC:
+        app = Path("/Applications/Google Chrome.app")
+        return ["open", "-a", "Google Chrome"] if app.exists() else None
+    import shutil
+    exe = shutil.which("google-chrome") or shutil.which("google-chrome-stable")
+    return [exe] if exe else None
+
+
+def open_site(link: str):
+    """Open the website in Google Chrome when it is installed, otherwise in the default browser.
+    (settings.json "browser": "default" turns the Chrome preference off.)"""
+    if config.load_settings().get("browser") != "default":
+        chrome = find_chrome()
+        if chrome:
+            try:
+                subprocess.Popen(chrome + [link], creationflags=0x08000000 if config.IS_WIN else 0)
+                return
+            except OSError:
+                pass
+    webbrowser.open(link)
+
+
 def _port_busy(port: int) -> bool:
     with socket.socket() as s:
         s.settimeout(0.5)
@@ -258,7 +290,7 @@ def main():
     if _port_busy(args.port):
         print("Studio Engine is already running. Opening the website…")
         if not args.no_browser:
-            webbrowser.open(link)
+            open_site(link)
         return
     print("=" * 64)
     print(f"  Studio Engine {VERSION} is running.  Keep this window open while you work.")
@@ -267,7 +299,7 @@ def main():
     print("=" * 64, flush=True)
     manager()
     if not args.no_browser:
-        webbrowser.open(link)
+        open_site(link)
     import uvicorn
     uvicorn.run(app, host=config.HOST, port=args.port, log_level="warning", timeout_graceful_shutdown=2)
 
