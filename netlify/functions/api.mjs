@@ -1,17 +1,23 @@
-import { store, json, authorized, listPages, runItem, env } from "../lib/shared.mjs";
+import { store, json, listPages, runItem, env, verifyGoogle, randomToken, scoped, resolveUser, registerUser, migrateLegacy } from "../lib/shared.mjs";
 
 const SAFE = /^[A-Za-z0-9_.|:-]{1,120}$/;
+const CP1252 = { 128: 8364, 130: 8218, 131: 402, 132: 8222, 133: 8230, 134: 8224, 135: 8225, 136: 710, 137: 8240, 138: 352, 139: 8249, 140: 338, 142: 381, 145: 8216, 146: 8217, 147: 8220, 148: 8221, 149: 8226, 150: 8211, 151: 8212, 152: 732, 153: 8482, 154: 353, 155: 8250, 156: 339, 158: 382, 159: 376 };
+// Decode Windows-1252 bytes (works everywhere, including Cloudflare Workers)
+function decode1252(bytes) { let s = ""; for (let i = 0; i < bytes.length; i += 8192) { const part = bytes.subarray(i, i + 8192); s += String.fromCharCode.apply(null, Array.from(part, (b) => CP1252[b] || b)); } return s; }
 
 function b64ToBytes(b64) {
-  const clean = String(b64).replace(/^data:[^,]+,/, "");
-  return Uint8Array.from(Buffer.from(clean, "base64"));
+  const bin = atob(String(b64).replace(/^data:[^,]+,/, ""));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 export default async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/api\/?/, "");
   const parts = path.split("/").filter(Boolean).map(decodeURIComponent);
-  const s = store();
+  const base = store();
+  let s = base;
   const siteUrl = env("URL") || url.origin;
 
   try {
@@ -19,13 +25,37 @@ export default async (req) => {
     if (req.method === "GET" && parts[0] === "img" && parts[1]) {
       const key = parts[1].replace(/\.jpg$/, "");
       if (!SAFE.test(key)) return new Response("Not found", { status: 404 });
-      const buf = await s.get(`img/${key}`, { type: "arrayBuffer" });
+      const buf = await base.get(`img/${key}`, { type: "arrayBuffer" });
       if (!buf) return new Response("Not found", { status: 404 });
       return new Response(buf, { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=86400" } });
     }
 
-    const auth = authorized(req);
-    if (!auth.ok) return json({ error: auth.reason }, 401);
+    // Public: sign-in settings
+    if (parts[0] === "config") return json({ googleClientId: env("GOOGLE_CLIENT_ID"), passwordLogin: !!(env("QUOTEAPP") || env("APP_PASSWORD")) });
+    if (parts[0] === "auth" && parts[1] === "google" && req.method === "POST") {
+      const cid = env("GOOGLE_CLIENT_ID"); if (!cid) return json({ error: "Google sign-in is not set up on the server yet (GOOGLE_CLIENT_ID)" }, 400);
+      const { credential } = await req.json();
+      let c; try { c = await verifyGoogle(credential, cid); } catch (e) { return json({ error: String(e.message || e) }, 401); }
+      const email = String(c.email).toLowerCase(), owner = String(env("OWNER_EMAIL") || "").toLowerCase();
+      const allowed = String(env("ALLOWED_EMAILS") || "").toLowerCase().split(/[,\s]+/).filter(Boolean);
+      if (allowed.length && !allowed.includes(email) && email !== owner) return json({ error: `${email} is not allowed to use this app. Ask the owner to add you.` }, 403);
+      const ns = owner && email === owner ? "owner" : "g" + c.sub;
+      if (ns === "owner") await migrateLegacy(base);
+      await registerUser(base, ns);
+      const token = randomToken();
+      await base.setJSON("sess/" + token, { ns, email, name: c.name || email, exp: Date.now() + 60 * 864e5 });
+      return json({ ok: true, token, email, name: c.name || email, owner: ns === "owner" });
+    }
+
+    const user = await resolveUser(req, base);
+    if (!user.ok) return json({ error: user.reason }, 401);
+    s = scoped(base, "u/" + user.ns + "/");
+    if (parts[0] === "auth" && parts[1] === "logout") { if (user.token) await base.delete("sess/" + user.token); return json({ ok: true }); }
+    if (parts[0] === "me") return json({ email: user.email, name: user.name, owner: user.ns === "owner" });
+    if (parts[0] === "secrets") {
+      if (req.method === "GET") return json((await s.get("secrets", { type: "json" })) || {});
+      if (req.method === "PUT") { const body = await req.json(); await s.setJSON("secrets", { ...body, updatedAt: Date.now() }); return json({ ok: true }); }
+    }
 
     // Health / status
     if (parts[0] === "health") {
@@ -74,8 +104,8 @@ export default async (req) => {
         const old = await s.get(`queue/${it.key}`, { type: "json" });
         if (old && old.status === "posted") return json({ ok: true, skipped: "already posted" });
         const imgKey = `${it.key.replace(/[|:]/g, "-")}-${crypto.randomUUID().slice(0, 12)}`;
-        if (old && old.imgKey) await s.delete(`img/${old.imgKey}`);
-        await s.set(`img/${imgKey}`, b64ToBytes(it.image));
+        if (old && old.imgKey) await base.delete(`img/${old.imgKey}`);
+        await base.set(`img/${imgKey}`, b64ToBytes(it.image));
         const item = {
           key: it.key, when: new Date(it.when).toISOString(), targets: (it.targets || ["fb", "ig"]).filter((t) => t === "fb" || t === "ig"),
           captionFb: it.captionFb || "", captionIg: it.captionIg || "", label: it.label || "", imgKey, status: "scheduled", attempts: 0, results: {},
@@ -86,23 +116,37 @@ export default async (req) => {
       if (parts[1] && SAFE.test(parts[1])) {
         const item = await s.get(`queue/${parts[1]}`, { type: "json" });
         if (!item) return json({ error: "not found" }, 404);
-        if (req.method === "DELETE") { await s.delete(`queue/${parts[1]}`); if (item.imgKey) await s.delete(`img/${item.imgKey}`); return json({ ok: true }); }
+        if (req.method === "DELETE") { await s.delete(`queue/${parts[1]}`); if (item.imgKey) await base.delete(`img/${item.imgKey}`); return json({ ok: true }); }
         if (req.method === "POST" && parts[2] === "now") { item.attempts = 0; const done = await runItem(s, item, siteUrl); return json({ ok: done.status === "posted", item: done }); }
       }
     }
 
     // Read-only copy of sriramchandra.org book pages and Peerless Pearls (for the Source bank)
+    if (parts[0] === "srcbin" && req.method === "GET") {
+      const pth = url.searchParams.get("path") || "";
+      if (!/^Books\/[A-Za-z0-9]+\/[A-Za-z0-9_]+\.(zip|pdf)$/i.test(pth)) return json({ error: "bad path" }, 400);
+      const ck = "srcbin/" + pth.toLowerCase();
+      let buf = await base.get(ck, { type: "arrayBuffer" });
+      if (!buf) {
+        const r = await fetch("http://www.sriramchandra.org/" + pth, { headers: { "user-agent": "Mozilla/5.0 (DailyQuoteCards)" } });
+        if (!r.ok) return json({ error: `sriramchandra.org returned ${r.status}` }, r.status === 404 ? 404 : 502);
+        buf = await r.arrayBuffer();
+        await base.set(ck, buf);
+      }
+      return new Response(buf, { headers: { "content-type": "application/octet-stream", "cache-control": "no-store" } });
+    }
+
     if (parts[0] === "src" && req.method === "GET") {
       const pth = url.searchParams.get("path") || "";
       if (!/^(Books\/[A-Za-z0-9]+\/[A-Za-z0-9]+chap_\d{1,3}\.htm|PeerlessPearls\/[A-Za-z]{3}\.htm)$/.test(pth)) return json({ error: "bad path" }, 400);
       const ck = "src/" + pth.toLowerCase();
-      const cached = await s.get(ck, { type: "json" });
+      const cached = await base.get(ck, { type: "json" });
       const html200 = (h) => new Response(h, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
       if (cached && Date.now() - cached.at < 7 * 864e5) return html200(cached.html);
       const r = await fetch("http://www.sriramchandra.org/" + pth, { headers: { "user-agent": "Mozilla/5.0 (DailyQuoteCards)" } });
       if (!r.ok) return json({ error: `sriramchandra.org returned ${r.status}` }, r.status === 404 ? 404 : 502);
-      const html = new TextDecoder("windows-1252").decode(await r.arrayBuffer());
-      await s.setJSON(ck, { at: Date.now(), html });
+      const html = decode1252(new Uint8Array(await r.arrayBuffer()));
+      await base.setJSON(ck, { at: Date.now(), html });
       return html200(html);
     }
 
