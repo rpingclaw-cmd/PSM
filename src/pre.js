@@ -74,7 +74,7 @@ function defaults(){
 
 /* ---------- storage (IndexedDB in this browser) ---------- */
 const IDB={db:null,
-  open(){return new Promise((res,rej)=>{try{const r=indexedDB.open('samadristi-studio',1);
+  open(){if(this._opening)return this._opening;return this._opening=new Promise((res,rej)=>{try{const r=indexedDB.open('samadristi-studio',1);
     r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
   get(k){return new Promise(res=>{if(!this.db)return res(undefined);const q=this.db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(undefined)})},
   set(k,v){return new Promise((res,rej)=>{if(!this.db)return rej(new Error('no db'));const tx=this.db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})},

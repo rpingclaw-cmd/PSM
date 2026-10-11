@@ -1,0 +1,24 @@
+# Runs the Studio Engine tests and checks the website build on every push / pull request.
+name: Studio Engine tests
+on:
+  push:
+    paths: ["engine/**", "src/**", "tools/**", "public/**", ".github/workflows/engine-tests.yml"]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg and espeak-ng (a test voice)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng
+      - uses: astral-sh/setup-uv@v6
+      - name: Website build is up to date (public/index.html made from src/)
+        run: |
+          python3 tools/build.py
+          git diff --exit-code public/index.html || (echo "public/index.html is out of date: run python3 tools/build.py" && exit 1)
+      - name: Engine tests (synthetic media with a known answer)
+        working-directory: engine
+        run: uv run --frozen pytest -q tests
+      - name: Browser logic tests (transcript line-up, sound map)
+        run: node tools/tests/test_studio2.mjs

@@ -17,13 +17,25 @@ exact clicks, never leave them with half-finished state. Spiritual content: quot
 
 ## Repo layout & build (IMPORTANT)
 - **Edit `src/`, never hand-edit `public/index.html`.** Then run `python3 tools/build.py` (assembles the single-file app:
-  head + CSS + embedded fonts + body + JS in order pre.js → themes2.js → draw.js → post.js).
+  head + CSS + embedded fonts + body + JS in order pre.js → themes2.js → draw.js → post.js → engine.js → studio2.js).
 - `netlify/functions/api.mjs`, `netlify/functions/autopost.mjs`, `netlify/lib/shared.mjs` = server logic (shared by all hosts).
 - After any server change, rebuild the Worker bundle (committed file):
   `npx esbuild cloudflare/entry.mjs --bundle --format=esm --platform=neutral --target=es2022 --outfile=cloudflare/worker.js --alias:@netlify/blobs=./cloudflare/kvstore.mjs`
 - `server/` = self-host Node version (rebuild with `--alias:@netlify/blobs=./server/filestore.mjs`, entry `server/entry.mjs`).
 - Local test: `npx wrangler dev` (put `QUOTEAPP=…` in `.dev.vars`, never commit it) or run `node server/server.mjs`
   with `DATA_DIR=/tmp/x QUOTEAPP=secret`.
+
+## Studio Engine (`engine/`)
+- Local helper the owner runs on their own computer (Python 3.13 via `uv`, FastAPI on 127.0.0.1:8765, ffmpeg,
+  DeepFilterNet `deep-filter` binary). Browser side: `src/engine.js` (Studio tab). Pairing token arrives as
+  `#engine=<token>` when the engine opens the site; requests carry `X-Engine-Token`.
+- Jobs: report, prepare, sync, clean, preview, render (+ lip-sync QC). Steps are resumable (`*.done.json` next to outputs
+  in `studio_work/`). Owner installs with `engine/install.ps1` (Windows) / `engine/install.sh` (Mac), which download
+  the engine from this repo's `main` branch — so engine changes reach the owner when they re-run the installer.
+- Tests: `cd engine && STUDIO_DEEP_FILTER=/path/to/deep-filter uv run pytest -q tests` (synthetic media with a known
+  sync answer; sync and lip-sync must be < 5 ms). CI runs them on GitHub (without DeepFilterNet).
+- Owner's machine: Windows 11 laptop, i7-8550U (4 cores), 16 GB, NVIDIA 940MX (no NVENC) + Intel UHD 620 (Quick Sync),
+  Smart App Control may be on. Keep defaults light (1080p renders, CPU-friendly).
 
 ## Rules
 1. Test before every push (Playwright for UI flows; real ffmpeg for Studio renders). Don't push untested code — every

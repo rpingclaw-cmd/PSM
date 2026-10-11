@@ -1475,12 +1475,12 @@ $('#libXlsx').addEventListener('click',async()=>{
    STUDIO — podcast / talk editor. Heavy video work is done by ffmpeg on
    the user's own computer; the browser does sync, transcript, editing.
    ===================================================================== */
-const STU_DEFAULTS={clean:'standard',res:'orig',enc:'cpu',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
+const STU_DEFAULTS={clean:'standard',res:'orig',enc:'auto',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
 let STU={videoName:'',audioName:'',videoFile:null,proxyFile:null,info:null,wavV:null,wavA:null,dur:0,sync:null,words:[],removed:{},reels:[],settings:{...STU_DEFAULTS},transcribed:false};
 const FILLERS=new Set(['um','umm','uh','uhh','erm','er','ah','hmm','mm','mmm','uhm']);
 function stuSay(id,t){const el=$(id);if(el)el.textContent=t}
 async function stuSave(){try{const {videoFile,proxyFile,wavV,wavA,...rest}=STU;await IDB.set('studio',rest)}catch(e){}}
-async function stuLoad(){try{const s=await IDB.get('studio');if(s){STU={...STU,...s,settings:{...STU_DEFAULTS,...(s.settings||{})}}}}catch(e){}}
+async function stuLoad(){try{await IDB.open();const s=await IDB.get('studio');if(s){STU={...STU,...s,settings:{...STU_DEFAULTS,...(s.settings||{})}}}}catch(e){}}
 const fmtT=t=>{t=Math.max(0,t);const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=(t%60);return (h?h+':'+String(m).padStart(2,'0'):m)+':'+s.toFixed(1).padStart(4,'0')};
 const fx=n=>(+n).toFixed(3);
 
@@ -1605,6 +1605,7 @@ async function transcribeStudio(onStatus,signal){
   // to video timeline
   const {a,b}=STU.sync||{a:0,b:1};const map=t=>(STU.settings.separate&&STU.wavA)?(t-a)/b:t;
   STU.words=all.map(w=>({w:w.w,s:map(w.s),e:map(w.e)})).filter(w=>w.e>0&&w.s<STU.dur+1);
+  STU.asrWords=STU.words.map(w=>({...w}));STU.aligned=false;if(typeof ANA!=='undefined'&&ANA)anaMergeSounds();
   STU.removed={};STU.transcribed=true;autoMarks();await stuSave();
 }
 
@@ -1613,13 +1614,16 @@ const isFiller=w=>FILLERS.has(w.w.toLowerCase().replace(/[^a-z]/g,''));
 function autoMarks(){
   for(const k of Object.keys(STU.removed))if(STU.removed[k]==='auto')delete STU.removed[k];
   if(STU.settings.fillers)STU.words.forEach((w,i)=>{if(isFiller(w)&&!STU.removed[i])STU.removed[i]='auto'});
+  if(STU.settings.extraCut!==false)STU.words.forEach((w,i)=>{if(w.x&&!STU.removed[i])STU.removed[i]='auto'});
 }
 function keepSegments(){
   const W=STU.words,D=STU.dur||((W.length?W[W.length-1].e:0)+1),cuts=[];
-  const gapMid=(i)=>{const p=W[i-1],n=W[i];return p?((p.e+n.s)/2):Math.max(0,n.s-0.15)};
+  const q=(a,b)=>(typeof quietest==='function'?quietest(a,b):(a+b)/2);
+  const gapMid=(i)=>{const p=W[i-1],n=W[i];return p?q(Math.min(p.e,n.s),Math.max(p.e,n.s)):Math.max(0,n.s-0.15)};
   for(let i=0;i<W.length;i++){if(!STU.removed[i])continue;let j=i;while(j+1<W.length&&STU.removed[j+1])j++;
-    const s=i>0?Math.min(gapMid(i),W[i].s):Math.max(0,W[i].s-0.1),e=j+1<W.length?Math.max((W[j].e+W[j+1].s)/2,W[j].e):Math.min(D,W[j].e+0.15);cuts.push([s,e]);i=j}
-  if(STU.settings.pauses){const mp=Math.max(0.4,+STU.settings.maxPause||1);let prev=null;
+    const s=i>0?Math.min(gapMid(i),W[i].s):Math.max(0,W[i].s-0.1),e=j+1<W.length?Math.max(q(Math.min(W[j].e,W[j+1].s),Math.max(W[j].e,W[j+1].s)),W[j].e):Math.min(D,W[j].e+0.15);cuts.push([s,e]);i=j}
+  if(STU.settings.pauses&&typeof ANA!=='undefined'&&ANA)cuts.push(...anaPauseCuts(Math.max(0.4,+STU.settings.maxPause||1),STU.settings.keepBreaths!==false));
+  else if(STU.settings.pauses){const mp=Math.max(0.4,+STU.settings.maxPause||1);let prev=null;
     for(let i=0;i<W.length;i++){if(STU.removed[i])continue;if(prev!==null){const g=W[i].s-W[prev].e;if(g>mp)cuts.push([W[prev].e+mp/2,W[i].s-mp/2])}prev=i}}
   if(STU.settings.trimEnds&&W.length){const first=W.findIndex((w,i)=>!STU.removed[i]);let last=W.length-1;while(last>=0&&STU.removed[last])last--;
     if(first>=0){if(W[first].s>0.8)cuts.push([0,W[first].s-0.5]);if(D-W[last].e>0.8)cuts.push([W[last].e+0.5,D])}}
@@ -1761,7 +1765,7 @@ function stuRenderInfo(){
   if(STU.dur)parts.push(`length ${fmtT(STU.dur)}`);
   $('#stuInfo').textContent=parts.join(' · ');
   $('#stuAudioRow').hidden=!STU.settings.separate;
-  const s=STU.sync;$('#stuSyncOut').textContent=s?`Offset ${(s.a*1000).toFixed(0)} ms, drift ${((s.b-1)*1e6).toFixed(0)} ppm${s.conf<4?' — low confidence: check lip sync and adjust below':' — confident match'}`:'';
+  const s=STU.sync;$('#stuSyncOut').textContent=s?(s.engine&&s.message?s.message:`Offset ${(s.a*1000).toFixed(0)} ms, drift ${((s.b-1)*1e6).toFixed(0)} ppm${s.conf<4?' — low confidence: check lip sync and adjust below':' — confident match'}`):'';
   if(s)$('#stuOffset').value=Math.round(s.a*1000);
   ['clean','res','enc','reelRes','lang'].forEach(k=>{const el=$('#stu_'+k);if(el)el.value=STU.settings[k]});
   ['fillers','pauses','trimEnds','reelCaps','proxy','separate'].forEach(k=>{const el=$('#stu_'+k);if(el)el.checked=!!STU.settings[k]});
@@ -1769,7 +1773,7 @@ function stuRenderInfo(){
 }
 function stuRenderTranscript(){
   const box=$('#stuText');if(!STU.words.length){box.innerHTML='<p class="status">No transcript yet.</p>';stuStats();return}
-  let html='',para=[];const flush=()=>{if(para.length)html+=`<p><span class="stu-time">${fmtT(STU.words[para[0]].s)}</span> ${para.map(i=>`<span data-i="${i}" class="stu-w${STU.removed[i]?' cut':''}${isFiller(STU.words[i])?' filler':''}">${esc(STU.words[i].w)}</span>`).join(' ')}</p>`;para=[]};
+  let html='',para=[];const flush=()=>{if(para.length)html+=`<p><span class="stu-time">${fmtT(STU.words[para[0]].s)}</span> ${para.map(i=>`<span data-i="${i}" class="stu-w${STU.removed[i]?' cut':''}${isFiller(STU.words[i])?' filler':''}${STU.words[i].u?' unsure':''}${STU.words[i].x?' extra':''}">${esc(STU.words[i].w)}</span>`).join(' ')}</p>`;para=[]};
   STU.words.forEach((w,i)=>{const prev=STU.words[i-1];if(prev&&(w.s-prev.e>1.5||(para.length>45&&/[.?!]$/.test(prev.w))))flush();para.push(i)});flush();
   box.innerHTML=html;stuStats();
 }
@@ -1794,7 +1798,7 @@ function wireStudio(){
   $('#stu_separate').addEventListener('change',e=>{STU.settings.separate=e.target.checked;stuSave();stuRenderInfo()});
   $('#stuVideoFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;STU.videoName=f.name;STU.videoFile=f;stuVideo().src=URL.createObjectURL(f);stuSave();stuRenderInfo()});
   $('#stuAudioFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;STU.audioName=f.name;stuSave();stuRenderInfo()});
-  stuVideo().addEventListener('error',()=>stuSay('#stuPrepStatus','Your browser cannot play this video directly. Tick "Make a small preview copy", download the prepare file again and run it, then load preview.mp4.'));
+  stuVideo().addEventListener('error',()=>stuSay('#stuPrepStatus',(typeof ENG!=='undefined'&&ENG.on)?'This browser cannot play the preview video (H.264). Please use Chrome or Edge for the Studio tab.':'Your browser cannot play this video directly. Tick "Make a small preview copy", download the prepare file again and run it, then load preview.mp4.'));
   stuVideo().addEventListener('loadedmetadata',()=>{if(!STU.dur&&isFinite(stuVideo().duration))STU.dur=stuVideo().duration});
   ['clean','res','enc','reelRes','lang'].forEach(k=>$('#stu_'+k).addEventListener('change',e=>{STU.settings[k]=e.target.value;stuSave()}));
   ['fillers','pauses','trimEnds','reelCaps','proxy'].forEach(k=>$('#stu_'+k).addEventListener('change',e=>{STU.settings[k]=e.target.checked;if(k==='fillers')autoMarks();stuSave();stuRenderTranscript()}));
@@ -1812,8 +1816,8 @@ function wireStudio(){
       stuSay('#stuLoadStatus',miss.length?`Loaded. Still missing: ${miss.join(', ')}.`:'All prepared files loaded.');await stuSave();stuRenderInfo();
     }catch(err){stuSay('#stuLoadStatus',err.message)}e.target.value=''});
   $('#stuSync').addEventListener('click',async()=>{
-    try{STU.sync=await computeSync(t=>stuSay('#stuSyncOut',t));await stuSave();stuRenderInfo()}catch(e){stuSay('#stuSyncOut',e.message)}});
-  $('#stuOffset').addEventListener('change',e=>{STU.sync={...(STU.sync||{b:1,conf:99}),a:(+e.target.value||0)/1000};stuSave();stuRenderInfo()});
+    try{STU.sync=(ENG.on&&STU.engPrep)?await engSync(t=>stuSay('#stuSyncOut',t)):await computeSync(t=>stuSay('#stuSyncOut',t));await stuSave();stuRenderInfo()}catch(e){stuSay('#stuSyncOut',e.message)}});
+  $('#stuOffset').addEventListener('change',e=>{STU.sync={...(STU.sync||{b:1,conf:99}),a:(+e.target.value||0)/1000,engine:false};stuSave();stuRenderInfo()});
   $('#stuTranscribe').addEventListener('click',async()=>{
     if(STU.settings.separate&&STU.wavA&&!STU.sync){stuSay('#stuTxStatus','Press "Find sync automatically" first.');return}
     if(STU.words.length&&!confirm('Transcribe again? Your current edits will be lost.'))return;
@@ -1875,7 +1879,7 @@ ${text}`;
     stuSave();stuStats();stuSay('#stuReelStatus',`Added ${added} reel suggestion${added===1?'':'s'} (with ${PROVIDERS[got.pid].label}). Play them, rename or remove any.`);
   }catch(e){stuSay('#stuReelStatus',errMsg(e))}
 }
-(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript()})();
+(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init()})();
 
 
 /* ---------- Google account sign-in & synced keys ---------- */

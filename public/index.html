@@ -114,6 +114,25 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
 .stu-w.cut{text-decoration:line-through;opacity:.42;background:color-mix(in srgb,#c0392b 12%,transparent)}
 .stu-w.filler:not(.cut){text-decoration:underline dotted}
 .stu-time{font-size:.75rem;color:var(--muted);margin-right:4px}
+.eng-cmd{display:inline-block;font-size:.78rem;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:3px 6px;margin:4px 0;word-break:break-all}
+.eng-jobs .eng-job{border-top:1px solid var(--line);padding:8px 0}
+.eng-jobs .eng-job:first-child{border-top:0}
+.eng-job-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.eng-job .badge{margin:0}
+.eng-job progress{width:100%;height:8px;accent-color:var(--accent);margin:6px 0 2px}
+.eng-job .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.eng-job a.btn{text-decoration:none;display:inline-block}
+.eng-file{display:flex;gap:10px;align-items:center;margin:0 0 8px;flex-wrap:wrap}
+.eng-file .status{word-break:break-all}
+.eng-report{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:4px 0 12px;background:var(--paper)}
+.eng-note{display:grid;grid-template-columns:20px 1fr;gap:6px;font-size:.86rem;padding:3px 0}
+.eng-note.warn span:first-child{color:var(--warn)}
+.eng-note.ok span:first-child{color:var(--ok)}
+.eng-qc{white-space:pre-wrap;font:.82rem/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}
+.stu-w.unsure:not(.cut){text-decoration:underline wavy color-mix(in srgb,var(--warn) 80%,transparent);text-underline-offset:3px}
+.stu-w.extra{color:var(--muted);font-style:italic}
+.stu-w.flash{outline:2px solid var(--accent);outline-offset:2px}
+.chap{display:grid;grid-template-columns:62px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
 
 @font-face {
   font-family: 'Cormorant Garamond';
@@ -548,23 +567,54 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
     <!-- STUDIO -->
     <div class="pane" id="pane-studio">
       <p class="note">Edit long talks and podcasts: clean the sound, sync a separate recorder with the video, edit by deleting words in the transcript, and make Reels. Your big video file never leaves your computer — the final 4K video is made on your computer by the free tool <strong>ffmpeg</strong>, using the files this page gives you.</p>
-      <details style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:500">Install ffmpeg (once, about 5 minutes)</summary>
+      <details id="stuFfmpegHelp" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:500">Install ffmpeg (once, about 5 minutes)</summary>
         <div class="hint" style="margin-top:8px"><strong>Windows:</strong> click Start, type <code>cmd</code>, open Command Prompt, paste <code>winget install Gyan.FFmpeg</code> and press Enter. Close and reopen any open windows afterwards.<br>
         <strong>Mac:</strong> open Terminal and paste <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>, press Enter and follow it; then paste <code>brew install ffmpeg</code>.<br>
         Check: type <code>ffmpeg -version</code> — it should print a version number.</div></details>
 
+      <fieldset id="engBox"><legend>Studio Engine — the heavy work, done on this computer</legend>
+        <p class="status" id="engStatus">Studio Engine: not connected.</p>
+        <div id="engOff">
+          <p class="hint" style="margin-top:4px">The free Studio Engine runs on your own computer: it checks your files, cleans the sound with AI voice isolation, syncs and makes the final videos — with live progress, and it can pause and continue. Nothing is uploaded. Without it, the download-a-script steps below still work.</p>
+          <details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:500">Install the Studio Engine (once, 5–15 minutes)</summary>
+            <div class="hint" style="margin-top:8px">
+              <strong>Windows:</strong> right-click the <strong>Start</strong> button → <strong>Terminal</strong> (or <strong>Windows PowerShell</strong>). Copy this line, paste it into that window and press <strong>Enter</strong>:<br>
+              <code id="engCmdWin" class="eng-cmd">irm https://raw.githubusercontent.com/rpingclaw-cmd/PSM/main/engine/install.ps1 | iex</code> <button class="btn small" data-copy="engCmdWin">Copy</button><br>
+              <strong>Mac:</strong> open <strong>Terminal</strong>, paste this line and press <strong>Return</strong>:<br>
+              <code id="engCmdMac" class="eng-cmd">curl -fsSL https://raw.githubusercontent.com/rpingclaw-cmd/PSM/main/engine/install.sh | bash</code> <button class="btn small" data-copy="engCmdMac">Copy</button><br>
+              When it finishes, this page opens by itself and shows <em>Engine connected ✓</em>. If the browser asks to <em>access other apps and services on this device</em>, click <strong>Allow</strong>.<br>
+              Next time: double-click <strong>Start Studio Engine</strong> on your desktop. To update the engine, run the same line again.</div></details>
+          <div class="under" style="margin-top:0"><button class="btn small" id="engRetry">Connect to the engine</button></div>
+        </div>
+        <div id="engOn" hidden>
+          <details style="margin:4px 0 8px"><summary style="cursor:pointer;font-size:.9rem">This computer</summary><div id="engHw" class="hint" style="margin:6px 0"></div><button class="btn small" id="engHwTest">Test again</button></details>
+          <div id="engJobs" class="eng-jobs"></div>
+        </div>
+      </fieldset>
+
       <fieldset><legend>1 · Your files</legend>
-        <label class="f"><span>Video (stays on your computer — nothing is uploaded)</span><input type="file" id="stuVideoFile" accept="video/*,.mov,.mp4,.mkv"></label>
         <label class="check"><input type="checkbox" id="stu_separate"> I recorded the audio separately (recorder or microphone)</label>
+        <div id="engFiles" hidden>
+          <div class="eng-file"><button class="btn small" id="engPickVideo">Choose video…</button><span id="engVideoPath" class="status">No video chosen</span></div>
+          <div class="eng-file" id="engAudioRow"><button class="btn small" id="engPickAudio">Choose separate audio…</button><span id="engAudioPath" class="status">No audio chosen</span></div>
+          <details style="margin:2px 0 10px"><summary class="status" style="cursor:pointer">The Choose window did not appear?</summary>
+            <p class="hint" style="margin:6px 0">Look behind the browser window. Or type the file's location here — on Windows hold <strong>Shift</strong>, right-click the file → <strong>Copy as path</strong>, then paste.</p>
+            <div class="row"><input id="engPastePath" placeholder="C:\Users\…\Talk video.MOV"><div class="under" style="margin:0"><button class="btn small" data-paste="video">Use as video</button><button class="btn small" data-paste="audio">Use as audio</button></div></div></details>
+          <div class="under" style="margin:4px 0 6px"><button class="btn small" id="engReportBtn">Check files</button><button class="btn small primary" id="engPrepBtn">Prepare (preview + sound)</button></div>
+          <div id="engReport"></div>
+        </div>
+        <div id="stuManual1">
+        <label class="f"><span>Video (stays on your computer — nothing is uploaded)</span><input type="file" id="stuVideoFile" accept="video/*,.mov,.mp4,.mkv"></label>
         <label class="f" id="stuAudioRow"><span>Separate audio</span><input type="file" id="stuAudioFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.flac"></label>
         <label class="check"><input type="checkbox" id="stu_proxy"> Also make a small preview copy (only if your browser cannot play the original video)</label>
         <div class="under" style="margin:4px 0 6px"><button class="btn small primary" id="stuPrepWin">Download prepare file — Windows</button><button class="btn small" id="stuPrepMac">— Mac</button></div>
         <p class="hint">Unzip it into the same folder as your video, run it, then come back here.</p>
+        </div>
         <p class="status" id="stuPrepStatus"></p>
         <p class="status" id="stuInfo"></p>
       </fieldset>
 
-      <fieldset><legend>2 · Load prepared files</legend>
+      <fieldset id="stuStep2"><legend>2 · Load prepared files</legend>
         <label class="btn small" style="display:inline-block">Load prepared files (select everything in studio_out)<input type="file" id="stuLoad" multiple accept=".wav,.json,.mp4" class="visually-hidden"></label>
         <p class="status" id="stuLoadStatus"></p>
       </fieldset>
@@ -575,16 +625,47 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
         <label class="f" style="max-width:280px"><span>Offset in milliseconds (adjust if lips look early/late)</span><input type="number" id="stuOffset" step="10"></label>
       </fieldset>
 
-      <fieldset><legend>4 · Transcribe</legend>
+      <fieldset id="stuSound"><legend>4 · Clean the sound</legend>
+        <p class="hint" id="engSoundOff">Needs the Studio Engine (above). Without it, the render file in step 8 uses the simple “Sound cleanup” choice there.</p>
+        <div id="engSoundOn" hidden>
+          <label class="f"><span>Voice isolation (AI, DeepFilterNet): <strong id="snd_strengthVal">60</strong>% — lower keeps more of the room's natural sound, 100 removes all background noise</span><input type="range" id="snd_strength" min="0" max="100" step="5"></label>
+          <div class="row">
+            <label class="f"><span>Loudness</span><select id="snd_lufs"><option value="-16">−16 LUFS — podcast &amp; YouTube (recommended)</option><option value="-14">−14 LUFS — louder, for phones / Reels</option></select></label>
+            <div></div>
+          </div>
+          <div class="row3">
+            <label class="check"><input type="checkbox" id="snd_hp"> Remove rumble</label>
+            <label class="check"><input type="checkbox" id="snd_presence"> Clearer voice (EQ)</label>
+            <label class="check"><input type="checkbox" id="snd_deess"> Soften harsh “s”</label>
+            <label class="check"><input type="checkbox" id="snd_comp"> Even out loud/soft</label>
+            <label class="check"><input type="checkbox" id="snd_roomtone"> Room tone in pauses</label>
+          </div>
+          <div class="under" style="margin:4px 0 8px"><button class="btn small primary" id="engPreviewBtn">▶ Preview 30 s before / after</button><button class="btn small" id="engCleanBtn">Clean the whole recording</button></div>
+          <p class="hint">The preview starts where the video player is (or a quarter of the way in). Both are played at the same loudness, so you hear only the cleaning. Rendering cleans the whole recording automatically if you have not done it here.</p>
+          <div id="engAB" class="row" hidden>
+            <label class="f"><span>Before</span><audio id="engBefore" controls preload="auto" style="width:100%"></audio></label>
+            <label class="f"><span>After</span><audio id="engAfter" controls preload="auto" style="width:100%"></audio></label>
+          </div>
+          <p class="status" id="engSoundStatus"></p>
+        </div>
+      </fieldset>
+
+      <fieldset><legend>5 · Transcribe</legend>
         <div class="row">
           <label class="f"><span>Language</span><select id="stu_lang"><option value="">Detect automatically</option><option value="en">English</option><option value="hi">Hindi</option><option value="te">Telugu</option><option value="ta">Tamil</option><option value="kn">Kannada</option></select></label>
           <div class="under" style="align-self:end;margin:0 0 12px"><button class="btn small primary" id="stuTranscribe">Transcribe</button><button class="btn small" id="stuStop">Stop</button></div>
         </div>
         <p class="hint">Uses your free Groq key (best word timing), or Gemini as a backup.</p>
         <p class="status" id="stuTxStatus"></p>
+        <details id="stuOwnBox" style="margin-top:10px" open><summary style="cursor:pointer;font-weight:500">Use my accurate transcript (exact wording)</summary>
+          <p class="hint" style="margin:6px 0 8px">Paste your transcript or load it from a file (.txt, .docx, .srt). After transcribing above, press <strong>Line up</strong>: the editor then shows <em>your</em> words, each with its exact time in the recording. Words to check are underlined in orange; spoken words that are not in your text (um, repeats) are grey.</p>
+          <textarea id="stuOwnText" rows="5" placeholder="Paste the accurate transcript here…"></textarea>
+          <div class="under" style="margin:6px 0"><label class="btn small">Load from file<input type="file" id="stuOwnFile" accept=".txt,.docx,.srt,.vtt,text/plain" class="visually-hidden"></label><button class="btn small primary" id="stuAlign">Line up my transcript with the recording</button><button class="btn small" id="stuNextUnsure">Next word to check ▸</button></div>
+          <p class="status" id="stuAlignStatus"></p>
+        </details>
       </fieldset>
 
-      <fieldset><legend>5 · Edit by text</legend>
+      <fieldset><legend>6 · Edit by text</legend>
         <video id="stuVideo" controls playsinline style="width:100%;max-height:52vh;background:#000;border-radius:8px"></video>
         <label class="check" style="margin-top:6px"><input type="checkbox" id="stuPlayEdited"> Play edited version (skips the cut parts)</label>
         <div class="under" style="margin:6px 0 8px">
@@ -597,31 +678,49 @@ body[data-tab="studio"] .layout{grid-template-columns:1fr}
           <label class="check"><input type="checkbox" id="stu_pauses"> Shorten long pauses</label>
           <label class="check"><input type="checkbox" id="stu_trimEnds"> Trim silence at start/end</label>
         </div>
+        <div class="row3">
+          <label class="check"><input type="checkbox" id="stu_extraCut"> Cut words not in my transcript</label>
+          <label class="check"><input type="checkbox" id="stu_keepBreaths"> Keep natural breaths</label>
+          <label class="f" style="margin:0"><span>Smooth cuts (ms cross-fade)</span><input type="number" id="stu_xfade" min="0" max="200" step="10"></label>
+        </div>
         <label class="f" style="max-width:280px"><span>Longest pause to keep (seconds)</span><input type="number" id="stu_maxPause" min="0.4" max="5" step="0.1"></label>
+        <div class="under" style="margin:0 0 6px"><button class="btn small" id="stuAnalyse">Listen for pauses, breaths and missed “um”s (Studio Engine)</button></div>
+        <p class="status" id="stuAnaStatus"></p>
         <p class="hint">Select words with your mouse, then press Cut. Click a word to jump the video there.</p>
         <p class="status" id="stuStats"></p>
         <div id="stuText" class="stu-text"></div>
       </fieldset>
 
-      <fieldset><legend>6 · Reels</legend>
+      <fieldset><legend>7 · Reels &amp; chapters</legend>
         <div class="row">
           <label class="f"><span>How many suggestions</span><input type="number" id="stuReelCount" min="1" max="15" value="5"></label>
           <div class="under" style="align-self:end;margin:0 0 12px"><button class="btn small primary" id="stuSuggest">✨ Suggest best moments (AI)</button></div>
         </div>
         <p class="status" id="stuReelStatus"></p>
         <div id="stuReels"></div>
+        <h4 class="group-title">Chapters (YouTube timestamps)</h4>
+        <div class="under" style="margin:0 0 8px"><button class="btn small primary" id="stuChapSuggest">✨ Suggest chapters (AI)</button><button class="btn small" id="stuChapAdd">＋ Add chapter here</button><button class="btn small" id="stuChapCopy">Copy for YouTube</button></div>
+        <p class="status" id="stuChapStatus"></p>
+        <div id="stuChapters"></div>
+        <p class="status" id="stuChapWarn" style="color:var(--warn)"></p>
       </fieldset>
 
-      <fieldset><legend>7 · Make the final files</legend>
+      <fieldset><legend>8 · Make the final files</legend>
         <div class="row">
           <label class="f"><span>Sound cleanup</span><select id="stu_clean"><option value="light">Light — keep it natural</option><option value="standard">Standard — podcast clarity (recommended)</option><option value="strong">Strong — noisy room (AI noise removal)</option><option value="none">Loudness only</option></select></label>
           <label class="f"><span>Full video size</span><select id="stu_res"><option value="orig">Original (4K)</option><option value="1440">1440p</option><option value="1080">1080p (faster, smaller)</option></select></label>
         </div>
         <div class="row">
-          <label class="f"><span>Speed</span><select id="stu_enc"><option value="cpu">Normal (works on every computer)</option><option value="mac">Fast — Mac</option><option value="nvidia">Fast — NVIDIA graphics</option><option value="intel">Fast — Intel graphics</option><option value="amd">Fast — AMD graphics</option></select></label>
+          <label class="f"><span>Speed</span><select id="stu_enc"><option value="auto">Automatic — best for this computer (Studio Engine)</option><option value="cpu">Normal (works on every computer)</option><option value="mac">Fast — Mac</option><option value="nvidia">Fast — NVIDIA graphics</option><option value="intel">Fast — Intel graphics</option><option value="amd">Fast — AMD graphics</option></select></label>
           <label class="f"><span>Reel size</span><select id="stu_reelRes"><option value="1080">1080 × 1920 (best for Instagram)</option><option value="720">720 × 1280 (smaller)</option></select></label>
         </div>
         <label class="check"><input type="checkbox" id="stu_reelCaps"> Burn captions into Reels</label>
+        <div id="engRenderBox" hidden>
+          <div class="under" style="margin:8px 0"><button class="btn primary" id="engRenderBtn">Make the final files on this computer</button><button class="btn small" id="engOpenFolder" hidden>Open the folder</button></div>
+          <p class="hint">Made next to your video: <em>Edited - full video.mp4</em>, the podcast (<em>.mp3</em> + <em>.wav</em>), captions (<em>.srt</em>), every Reel, and a quality check. On a laptop, choose 1080p: a 1-hour talk takes roughly 1–3 hours. You can close the browser; the engine keeps working. If it is interrupted, press Resume — finished parts are kept.</p>
+          <pre id="engQC" class="eng-qc" hidden></pre>
+          <p class="status" style="margin:10px 0 0">Or, without the engine, download a render file:</p>
+        </div>
         <div class="under" style="margin:8px 0"><button class="btn primary" id="stuRenderWin">Download render file — Windows</button><button class="btn" id="stuRenderMac">— Mac</button></div>
         <p class="hint">Unzip into the video's folder and run it. You get: <em>Edited - full video.mp4</em>, <em>Edited - full audio.mp3</em> (podcast), captions (.srt) and each Reel. A 1-hour 4K video takes roughly 30–90 minutes; each Reel 1–3 minutes.</p>
         <div class="under"><button class="btn small" id="stuSrt">Captions (.srt)</button><button class="btn small" id="stuCsv">Cut list (.csv)</button><button class="btn small" id="stuText2">Edited transcript (.txt)</button><button class="btn small" id="stuSaveProj">Save project</button><label class="btn small">Open project<input type="file" id="stuLoadProj" accept=".json" class="visually-hidden"></label></div>
@@ -860,7 +959,7 @@ function defaults(){
 
 /* ---------- storage (IndexedDB in this browser) ---------- */
 const IDB={db:null,
-  open(){return new Promise((res,rej)=>{try{const r=indexedDB.open('samadristi-studio',1);
+  open(){if(this._opening)return this._opening;return this._opening=new Promise((res,rej)=>{try{const r=indexedDB.open('samadristi-studio',1);
     r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
   get(k){return new Promise(res=>{if(!this.db)return res(undefined);const q=this.db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(undefined)})},
   set(k,v){return new Promise((res,rej)=>{if(!this.db)return rej(new Error('no db'));const tx=this.db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})},
@@ -2812,12 +2911,12 @@ $('#libXlsx').addEventListener('click',async()=>{
    STUDIO — podcast / talk editor. Heavy video work is done by ffmpeg on
    the user's own computer; the browser does sync, transcript, editing.
    ===================================================================== */
-const STU_DEFAULTS={clean:'standard',res:'orig',enc:'cpu',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
+const STU_DEFAULTS={clean:'standard',res:'orig',enc:'auto',lang:'',fillers:true,pauses:true,maxPause:1.0,trimEnds:true,srt:true,reelCaps:true,reelRes:'1080',separate:true,proxy:false};
 let STU={videoName:'',audioName:'',videoFile:null,proxyFile:null,info:null,wavV:null,wavA:null,dur:0,sync:null,words:[],removed:{},reels:[],settings:{...STU_DEFAULTS},transcribed:false};
 const FILLERS=new Set(['um','umm','uh','uhh','erm','er','ah','hmm','mm','mmm','uhm']);
 function stuSay(id,t){const el=$(id);if(el)el.textContent=t}
 async function stuSave(){try{const {videoFile,proxyFile,wavV,wavA,...rest}=STU;await IDB.set('studio',rest)}catch(e){}}
-async function stuLoad(){try{const s=await IDB.get('studio');if(s){STU={...STU,...s,settings:{...STU_DEFAULTS,...(s.settings||{})}}}}catch(e){}}
+async function stuLoad(){try{await IDB.open();const s=await IDB.get('studio');if(s){STU={...STU,...s,settings:{...STU_DEFAULTS,...(s.settings||{})}}}}catch(e){}}
 const fmtT=t=>{t=Math.max(0,t);const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=(t%60);return (h?h+':'+String(m).padStart(2,'0'):m)+':'+s.toFixed(1).padStart(4,'0')};
 const fx=n=>(+n).toFixed(3);
 
@@ -2942,6 +3041,7 @@ async function transcribeStudio(onStatus,signal){
   // to video timeline
   const {a,b}=STU.sync||{a:0,b:1};const map=t=>(STU.settings.separate&&STU.wavA)?(t-a)/b:t;
   STU.words=all.map(w=>({w:w.w,s:map(w.s),e:map(w.e)})).filter(w=>w.e>0&&w.s<STU.dur+1);
+  STU.asrWords=STU.words.map(w=>({...w}));STU.aligned=false;if(typeof ANA!=='undefined'&&ANA)anaMergeSounds();
   STU.removed={};STU.transcribed=true;autoMarks();await stuSave();
 }
 
@@ -2950,13 +3050,16 @@ const isFiller=w=>FILLERS.has(w.w.toLowerCase().replace(/[^a-z]/g,''));
 function autoMarks(){
   for(const k of Object.keys(STU.removed))if(STU.removed[k]==='auto')delete STU.removed[k];
   if(STU.settings.fillers)STU.words.forEach((w,i)=>{if(isFiller(w)&&!STU.removed[i])STU.removed[i]='auto'});
+  if(STU.settings.extraCut!==false)STU.words.forEach((w,i)=>{if(w.x&&!STU.removed[i])STU.removed[i]='auto'});
 }
 function keepSegments(){
   const W=STU.words,D=STU.dur||((W.length?W[W.length-1].e:0)+1),cuts=[];
-  const gapMid=(i)=>{const p=W[i-1],n=W[i];return p?((p.e+n.s)/2):Math.max(0,n.s-0.15)};
+  const q=(a,b)=>(typeof quietest==='function'?quietest(a,b):(a+b)/2);
+  const gapMid=(i)=>{const p=W[i-1],n=W[i];return p?q(Math.min(p.e,n.s),Math.max(p.e,n.s)):Math.max(0,n.s-0.15)};
   for(let i=0;i<W.length;i++){if(!STU.removed[i])continue;let j=i;while(j+1<W.length&&STU.removed[j+1])j++;
-    const s=i>0?Math.min(gapMid(i),W[i].s):Math.max(0,W[i].s-0.1),e=j+1<W.length?Math.max((W[j].e+W[j+1].s)/2,W[j].e):Math.min(D,W[j].e+0.15);cuts.push([s,e]);i=j}
-  if(STU.settings.pauses){const mp=Math.max(0.4,+STU.settings.maxPause||1);let prev=null;
+    const s=i>0?Math.min(gapMid(i),W[i].s):Math.max(0,W[i].s-0.1),e=j+1<W.length?Math.max(q(Math.min(W[j].e,W[j+1].s),Math.max(W[j].e,W[j+1].s)),W[j].e):Math.min(D,W[j].e+0.15);cuts.push([s,e]);i=j}
+  if(STU.settings.pauses&&typeof ANA!=='undefined'&&ANA)cuts.push(...anaPauseCuts(Math.max(0.4,+STU.settings.maxPause||1),STU.settings.keepBreaths!==false));
+  else if(STU.settings.pauses){const mp=Math.max(0.4,+STU.settings.maxPause||1);let prev=null;
     for(let i=0;i<W.length;i++){if(STU.removed[i])continue;if(prev!==null){const g=W[i].s-W[prev].e;if(g>mp)cuts.push([W[prev].e+mp/2,W[i].s-mp/2])}prev=i}}
   if(STU.settings.trimEnds&&W.length){const first=W.findIndex((w,i)=>!STU.removed[i]);let last=W.length-1;while(last>=0&&STU.removed[last])last--;
     if(first>=0){if(W[first].s>0.8)cuts.push([0,W[first].s-0.5]);if(D-W[last].e>0.8)cuts.push([W[last].e+0.5,D])}}
@@ -3098,7 +3201,7 @@ function stuRenderInfo(){
   if(STU.dur)parts.push(`length ${fmtT(STU.dur)}`);
   $('#stuInfo').textContent=parts.join(' · ');
   $('#stuAudioRow').hidden=!STU.settings.separate;
-  const s=STU.sync;$('#stuSyncOut').textContent=s?`Offset ${(s.a*1000).toFixed(0)} ms, drift ${((s.b-1)*1e6).toFixed(0)} ppm${s.conf<4?' — low confidence: check lip sync and adjust below':' — confident match'}`:'';
+  const s=STU.sync;$('#stuSyncOut').textContent=s?(s.engine&&s.message?s.message:`Offset ${(s.a*1000).toFixed(0)} ms, drift ${((s.b-1)*1e6).toFixed(0)} ppm${s.conf<4?' — low confidence: check lip sync and adjust below':' — confident match'}`):'';
   if(s)$('#stuOffset').value=Math.round(s.a*1000);
   ['clean','res','enc','reelRes','lang'].forEach(k=>{const el=$('#stu_'+k);if(el)el.value=STU.settings[k]});
   ['fillers','pauses','trimEnds','reelCaps','proxy','separate'].forEach(k=>{const el=$('#stu_'+k);if(el)el.checked=!!STU.settings[k]});
@@ -3106,7 +3209,7 @@ function stuRenderInfo(){
 }
 function stuRenderTranscript(){
   const box=$('#stuText');if(!STU.words.length){box.innerHTML='<p class="status">No transcript yet.</p>';stuStats();return}
-  let html='',para=[];const flush=()=>{if(para.length)html+=`<p><span class="stu-time">${fmtT(STU.words[para[0]].s)}</span> ${para.map(i=>`<span data-i="${i}" class="stu-w${STU.removed[i]?' cut':''}${isFiller(STU.words[i])?' filler':''}">${esc(STU.words[i].w)}</span>`).join(' ')}</p>`;para=[]};
+  let html='',para=[];const flush=()=>{if(para.length)html+=`<p><span class="stu-time">${fmtT(STU.words[para[0]].s)}</span> ${para.map(i=>`<span data-i="${i}" class="stu-w${STU.removed[i]?' cut':''}${isFiller(STU.words[i])?' filler':''}${STU.words[i].u?' unsure':''}${STU.words[i].x?' extra':''}">${esc(STU.words[i].w)}</span>`).join(' ')}</p>`;para=[]};
   STU.words.forEach((w,i)=>{const prev=STU.words[i-1];if(prev&&(w.s-prev.e>1.5||(para.length>45&&/[.?!]$/.test(prev.w))))flush();para.push(i)});flush();
   box.innerHTML=html;stuStats();
 }
@@ -3131,7 +3234,7 @@ function wireStudio(){
   $('#stu_separate').addEventListener('change',e=>{STU.settings.separate=e.target.checked;stuSave();stuRenderInfo()});
   $('#stuVideoFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;STU.videoName=f.name;STU.videoFile=f;stuVideo().src=URL.createObjectURL(f);stuSave();stuRenderInfo()});
   $('#stuAudioFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;STU.audioName=f.name;stuSave();stuRenderInfo()});
-  stuVideo().addEventListener('error',()=>stuSay('#stuPrepStatus','Your browser cannot play this video directly. Tick "Make a small preview copy", download the prepare file again and run it, then load preview.mp4.'));
+  stuVideo().addEventListener('error',()=>stuSay('#stuPrepStatus',(typeof ENG!=='undefined'&&ENG.on)?'This browser cannot play the preview video (H.264). Please use Chrome or Edge for the Studio tab.':'Your browser cannot play this video directly. Tick "Make a small preview copy", download the prepare file again and run it, then load preview.mp4.'));
   stuVideo().addEventListener('loadedmetadata',()=>{if(!STU.dur&&isFinite(stuVideo().duration))STU.dur=stuVideo().duration});
   ['clean','res','enc','reelRes','lang'].forEach(k=>$('#stu_'+k).addEventListener('change',e=>{STU.settings[k]=e.target.value;stuSave()}));
   ['fillers','pauses','trimEnds','reelCaps','proxy'].forEach(k=>$('#stu_'+k).addEventListener('change',e=>{STU.settings[k]=e.target.checked;if(k==='fillers')autoMarks();stuSave();stuRenderTranscript()}));
@@ -3149,8 +3252,8 @@ function wireStudio(){
       stuSay('#stuLoadStatus',miss.length?`Loaded. Still missing: ${miss.join(', ')}.`:'All prepared files loaded.');await stuSave();stuRenderInfo();
     }catch(err){stuSay('#stuLoadStatus',err.message)}e.target.value=''});
   $('#stuSync').addEventListener('click',async()=>{
-    try{STU.sync=await computeSync(t=>stuSay('#stuSyncOut',t));await stuSave();stuRenderInfo()}catch(e){stuSay('#stuSyncOut',e.message)}});
-  $('#stuOffset').addEventListener('change',e=>{STU.sync={...(STU.sync||{b:1,conf:99}),a:(+e.target.value||0)/1000};stuSave();stuRenderInfo()});
+    try{STU.sync=(ENG.on&&STU.engPrep)?await engSync(t=>stuSay('#stuSyncOut',t)):await computeSync(t=>stuSay('#stuSyncOut',t));await stuSave();stuRenderInfo()}catch(e){stuSay('#stuSyncOut',e.message)}});
+  $('#stuOffset').addEventListener('change',e=>{STU.sync={...(STU.sync||{b:1,conf:99}),a:(+e.target.value||0)/1000,engine:false};stuSave();stuRenderInfo()});
   $('#stuTranscribe').addEventListener('click',async()=>{
     if(STU.settings.separate&&STU.wavA&&!STU.sync){stuSay('#stuTxStatus','Press "Find sync automatically" first.');return}
     if(STU.words.length&&!confirm('Transcribe again? Your current edits will be lost.'))return;
@@ -3212,7 +3315,7 @@ ${text}`;
     stuSave();stuStats();stuSay('#stuReelStatus',`Added ${added} reel suggestion${added===1?'':'s'} (with ${PROVIDERS[got.pid].label}). Play them, rename or remove any.`);
   }catch(e){stuSay('#stuReelStatus',errMsg(e))}
 }
-(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript()})();
+(async()=>{await stuLoad();wireStudio();stuRenderInfo();stuRenderTranscript();engInit();stage2Init()})();
 
 
 /* ---------- Google account sign-in & synced keys ---------- */
@@ -3292,6 +3395,406 @@ function refreshAll(){fillForm();renderMonth();renderLibrary();renderSetup();ren
   if(SRV.token()||SRV.pw()) connectServer(true); else renderAuto();
   if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 })();
+
+/* =====================================================================
+   STUDIO ENGINE — the free helper that runs on the user's own computer
+   (127.0.0.1:8765). This page sends it jobs and shows live progress.
+   Paired by a token the engine puts in the address (#engine=…) when it
+   opens this page. If it is not running, the script-download flow stays.
+   ===================================================================== */
+const ENG={url:'http://127.0.0.1:8765',token:'',on:false,hw:null,jobs:[],es:null,waiters:{},checking:false};
+const SND_DEFAULTS={strength:60,lufs:-16,hp:true,presence:true,deess:true,comp:true,roomtone:true};
+function engToken(){
+  const m=location.hash.match(/engine=([\w-]+)/);
+  if(m){try{localStorage.setItem('engineToken',m[1])}catch(e){}history.replaceState(null,'',location.pathname+location.search+location.hash.replace(/[#&]?engine=[\w-]+/,''));if(location.hash==='#')history.replaceState(null,'',location.pathname+location.search)}
+  try{return m?m[1]:(localStorage.getItem('engineToken')||'')}catch(e){return m?m[1]:''}
+}
+function engFileUrl(p){return `${ENG.url}/api/file?t=${encodeURIComponent(ENG.token)}&path=${encodeURIComponent(p)}`}
+async function engFetch(path,opts={}){
+  const r=await fetch(ENG.url+path,{...opts,headers:{'Content-Type':'application/json','X-Engine-Token':ENG.token,...(opts.headers||{})},body:opts.body&&typeof opts.body!=='string'?JSON.stringify(opts.body):opts.body});
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||d.detail||('Engine error '+r.status));return d;
+}
+const baseName=p=>String(p||'').split(/[\\/]/).pop();
+function engSay(t){stuSay('#engStatus',t)}
+
+async function engCheck(){
+  if(ENG.checking)return;ENG.checking=true;
+  try{
+    const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),2500);
+    const r=await fetch(ENG.url+'/api/hello',{headers:{'X-Engine-Token':ENG.token},signal:ctl.signal});clearTimeout(tm);
+    const d=await r.json();
+    if(!d.paired){engOff('The Studio Engine is running but not paired with this browser. Close the engine window, then double-click “Start Studio Engine” again — it opens this page paired.');return}
+    if(!ENG.on){ENG.on=true;await engConnected(d)}
+  }catch(e){engOff(ENG.token?'Studio Engine: not running. Double-click “Start Studio Engine” on your desktop, then press Connect.':'Studio Engine: not installed yet (optional — see below).')}
+  finally{ENG.checking=false}
+}
+function engOff(msg){
+  ENG.on=false;if(ENG.es){ENG.es.close();ENG.es=null}engSay(msg);engShow();
+}
+async function engConnected(hello){
+  engSay(`Engine connected ✓ (version ${hello.version}) — checking this computer…`);engShow();
+  ENG.es=new EventSource(`${ENG.url}/api/events?t=${encodeURIComponent(ENG.token)}`);
+  ENG.es.onmessage=e=>{try{ENG.jobs=JSON.parse(e.data)}catch(err){return}engJobsRender();engResolve()};
+  ENG.es.onerror=()=>{if(ENG.es&&ENG.es.readyState===2){engOff('Studio Engine stopped. Double-click “Start Studio Engine” and press Connect.')}};
+  try{ENG.hw=await engFetch('/api/hardware');engHwRender();engSay(`Engine connected ✓ — ${ENG.hw.best_encoder_name} for video, voice isolation ${ENG.hw.deep_filter?'ready':'not installed'}.`)}catch(e){engSay('Engine connected ✓')}
+  if(STU.engPrep)engLoadPrepared(STU.engPrep,true).catch(()=>{});
+  if(STU.anaFile)fetch(engFileUrl(STU.anaFile)).then(r=>r.ok?r.json():null).then(d=>{if(d){anaSet(d);stuStats()}}).catch(()=>{});
+  // after a page reload: show the last finished render, and follow one that is still running
+  try{const jobs=await engFetch('/api/jobs');const r=jobs.find(j=>j.type==='render'&&STU.engVideo&&j.params&&j.params.video===STU.engVideo);
+    if(r&&r.state==='done')engShowQC(r.result);else if(r&&['queued','running'].includes(r.state)){ENG.jobs=jobs;engWaitRender(r.id)}}catch(e){}
+}
+function engShow(){
+  const on=ENG.on;$('#engOff').hidden=on;$('#stuFfmpegHelp').hidden=on;$('#stu_clean').closest('label').hidden=on;$('#engOn').hidden=!on;$('#engFiles').hidden=!on;$('#stuManual1').hidden=on;
+  $('#stuStep2').hidden=on;$('#engSoundOn').hidden=!on;$('#engSoundOff').hidden=on;$('#engRenderBox').hidden=!on;
+  $('#engAudioRow').hidden=!STU.settings.separate;
+  $('#engVideoPath').textContent=STU.engVideo?`${baseName(STU.engVideo)} — ${STU.engVideo}`:'No video chosen';
+  $('#engAudioPath').textContent=STU.engAudio?`${baseName(STU.engAudio)} — ${STU.engAudio}`:'No audio chosen';
+}
+function engHwRender(){const h=ENG.hw;if(!h)return;$('#engHw').innerHTML=h.summary.map(esc).join('<br>')}
+
+/* ---------- jobs ---------- */
+const JOB_NAMES={report:'Check files',prepare:'Prepare (preview + sound)',sync:'Find sync',clean:'Clean the sound',preview:'Sound preview',render:'Make the final files'};
+function engJobsRender(){
+  const box=$('#engJobs');const list=ENG.jobs.slice(0,6);
+  if(!list.length){box.innerHTML='<p class="status">No jobs yet.</p>';return}
+  box.innerHTML=list.map(j=>{
+    const pct=Math.round((j.progress||0)*100),live=j.state==='running'||j.state==='queued';
+    const badge={running:'Working',queued:'Waiting',done:'Done ✓',failed:'Problem',cancelled:'Cancelled',interrupted:'Interrupted'}[j.state]||j.state;
+    const el=j.started?Math.round(((j.finished||Date.now()/1000)-j.started)):0;
+    const eta=(j.state==='running'&&j.progress>0.03&&el>20)?` · about ${fmtDur(el/j.progress-el)} left`:'';
+    return `<div class="eng-job ${j.state}"><div class="eng-job-top"><strong>${esc(JOB_NAMES[j.type]||j.type)}</strong><span class="badge ${j.state==='done'?'ok':j.state==='failed'||j.state==='interrupted'?'warn':''}">${badge}</span><span class="status">${el?fmtDur(el):''}${eta}</span></div>
+      ${live||j.state==='cancelled'||j.state==='interrupted'?`<progress max="100" value="${pct}"></progress>`:''}
+      <div class="status">${esc(j.message||'')}${live?` (${pct}%)`:''}</div>
+      <div class="acts">${live?`<button class="btn small" data-jcancel="${j.id}">Cancel</button>`:''}${['cancelled','failed','interrupted'].includes(j.state)?`<button class="btn small" data-jresume="${j.id}">Resume</button>`:''}<a class="btn small" target="_blank" rel="noopener" href="${ENG.url}/api/jobs/${j.id}/log?t=${encodeURIComponent(ENG.token)}">Log</a></div></div>`}).join('');
+}
+function fmtDur(s){s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h} h ${m} min`:m?`${m} min ${s%60} s`:`${s} s`}
+function engResolve(){for(const j of ENG.jobs){const w=ENG.waiters[j.id];if(w&&!['queued','running'].includes(j.state)){delete ENG.waiters[j.id];j.state==='done'?w.ok(j):w.fail(j)}}}
+async function engRun(type,params){
+  const j=await engFetch('/api/jobs',{method:'POST',body:{type,params}});
+  return new Promise((ok,fail)=>{ENG.waiters[j.id]={ok:jj=>ok(jj.result),fail:jj=>fail(new Error(jj.state==='cancelled'?'Cancelled.':(jj.error||jj.message||'The job stopped.')))};engResolve()});
+}
+// a resumed job finishes under a new id: keep the screen in step with it
+async function engAfterResume(job){
+  if(job.type==='prepare')engWaitAndLoad(job.id);
+  if(job.type==='render')engWaitRender(job.id);
+}
+
+/* ---------- parameters shared by sound / render ---------- */
+function snd(){return {...SND_DEFAULTS,...(STU.settings.snd||{})}}
+function engParams(extra){
+  const sep=STU.settings.separate&&STU.engAudio;
+  return {video:STU.engVideo,audio:sep?STU.engAudio:null,sync:sep?(STU.sync||null):null,sound:snd(),...extra};
+}
+function engNeed(sync){
+  if(!STU.engVideo){alert('Choose your video first (step 1).');return false}
+  if(STU.settings.separate&&!STU.engAudio){alert('Choose your separate audio, or untick “I recorded the audio separately”.');return false}
+  if(sync&&STU.settings.separate&&!STU.sync){alert('Find the sync first (step 3).');return false}
+  return true;
+}
+
+/* ---------- step 1: files, report, prepare ---------- */
+async function engPick(kind){
+  stuSay('#engVideoPath',kind==='video'?'A “Choose” window opened — it may be behind this browser window…':$('#engVideoPath').textContent);
+  if(kind==='audio')stuSay('#engAudioPath','A “Choose” window opened — it may be behind this browser window…');
+  try{const d=await engFetch('/api/pick',{method:'POST',body:{kind}});if(d.path)engSetFile(kind,d.path)}catch(e){alert(e.message)}
+  engShow();
+}
+function engSetFile(kind,path){
+  if(kind==='video'){STU.engVideo=path;STU.videoName=baseName(path);STU.engPrep=null;STU.sync=null}else{STU.engAudio=path;STU.audioName=baseName(path);STU.engPrep=null;STU.sync=null}
+  $('#engReport').innerHTML='';stuSave();stuRenderInfo();engShow();
+}
+async function engReport(){
+  if(!engNeed())return;$('#engReport').innerHTML='<p class="status">Checking your files…</p>';
+  try{const r=await engRun('report',{video:STU.engVideo,audio:STU.settings.separate?STU.engAudio:null});
+    $('#engReport').innerHTML=`<div class="eng-report">${r.notes.map(n=>`<div class="eng-note ${n.level}"><span>${n.level==='warn'?'⚠':n.level==='info'?'ℹ':'✓'}</span><span>${esc(n.text)}</span></div>`).join('')}</div>`}
+  catch(e){$('#engReport').innerHTML=`<p class="status">${esc(e.message)}</p>`}
+}
+async function engPrepare(){
+  if(!engNeed())return;
+  try{const r=await engRun('prepare',{video:STU.engVideo,audio:STU.settings.separate?STU.engAudio:null});await engLoadPrepared(r)}
+  catch(e){stuSay('#stuPrepStatus',e.message)}
+}
+async function engWaitAndLoad(id){/* used after Resume */
+  await new Promise(ok=>{ENG.waiters[id]={ok:j=>{engLoadPrepared(j.result).finally(ok)},fail:()=>ok()};engResolve()});
+}
+async function engLoadPrepared(r,quiet){
+  STU.engPrep=r;if(!quiet)stuSay('#stuPrepStatus','Loading the preview and sound into the editor…');
+  const get=async p=>{const x=await fetch(engFileUrl(p));if(!x.ok)throw new Error('Could not read '+baseName(p)+' from the engine — press Prepare again.');return x};
+  if(r.video_wav)STU.wavV=parseWav(await (await get(r.video_wav)).arrayBuffer());
+  if(r.audio_wav&&STU.settings.separate)STU.wavA=parseWav(await (await get(r.audio_wav)).arrayBuffer());
+  if(r.info)STU.info=await (await get(r.info)).json();
+  if(r.proxy){stuVideo().src=engFileUrl(r.proxy)}
+  STU.dur=STU.wavV?STU.wavV.x.length/STU.wavV.rate:(r.duration||STU.dur);
+  await stuSave();stuRenderInfo();if(!quiet)stuSay('#stuPrepStatus','Prepared ✓ — preview and sound are loaded. Next: find the sync (step 3).');
+}
+
+/* ---------- step 3: sync ---------- */
+async function engSync(onStatus){
+  if(!STU.engPrep||!STU.engPrep.audio_wav)throw new Error('Press “Prepare” in step 1 first.');
+  onStatus('The engine is finding the sync…');
+  const r=await engRun('sync',{video_wav:STU.engPrep.video_wav,audio_wav:STU.engPrep.audio_wav});
+  return {a:r.a,b:r.b,conf:r.conf,engine:true,residual_ms:r.residual_ms,drift_ppm:r.drift_ppm,points:r.points,message:r.message};
+}
+
+/* ---------- step 4: sound ---------- */
+function engSoundUi(){
+  const s=snd();$('#snd_strength').value=s.strength;$('#snd_strengthVal').textContent=s.strength;$('#snd_lufs').value=String(s.lufs);
+  ['hp','presence','deess','comp','roomtone'].forEach(k=>$('#snd_'+k).checked=!!s[k]);
+}
+function engSoundSave(){
+  STU.settings.snd={strength:+$('#snd_strength').value,lufs:+$('#snd_lufs').value,...Object.fromEntries(['hp','presence','deess','comp','roomtone'].map(k=>[k,$('#snd_'+k).checked]))};
+  $('#snd_strengthVal').textContent=STU.settings.snd.strength;stuSave();
+}
+async function engPreview(){
+  if(!engNeed(true))return;const v=stuVideo();
+  const start=v&&v.currentTime>1?v.currentTime:Math.max(0,(STU.dur||120)*0.25);
+  stuSay('#engSoundStatus',`Making a 30-second preview from ${fmtT(start)}…`);$('#engPreviewBtn').disabled=true;
+  try{const r=await engRun('preview',engParams({start}));
+    $('#engBefore').src=engFileUrl(r.before);$('#engAfter').src=engFileUrl(r.after);$('#engAB').hidden=false;
+    stuSay('#engSoundStatus',`Preview from ${fmtT(r.start)} ready. Play Before, then After. Change the settings and preview again until it sounds right.`)}
+  catch(e){stuSay('#engSoundStatus',e.message)}finally{$('#engPreviewBtn').disabled=false}
+}
+async function engClean(){
+  if(!engNeed(true))return;stuSay('#engSoundStatus','Cleaning the whole recording (see progress above)…');
+  try{const r=await engRun('clean',engParams());stuSay('#engSoundStatus',r.message)}catch(e){stuSay('#engSoundStatus',e.message)}
+}
+
+/* ---------- step 8: render + quality check ---------- */
+function engRenderParams(){
+  const keep=keepSegments(),hasText=STU.words.length>0;
+  const reels=STU.reels.map((r,i)=>{const segs=clipSegs(keep,r.start,r.end);return segs.length?{name:`Reel ${String(i+1).padStart(2,'0')} - ${safeName(r.title)}`,start:r.start,end:r.end,segs,ass:STU.settings.reelCaps&&hasText?makeAss(segs):''}:null}).filter(Boolean);
+  return engParams({keep,reels,srt:hasText?makeSrt(keep):'',settings:{res:STU.settings.res,enc:STU.settings.enc,reelRes:STU.settings.reelRes,reelCaps:STU.settings.reelCaps,xfade_ms:STU.settings.xfade??40},chapters:typeof chaptersText==='function'?chaptersText():''});
+}
+async function engRender(){
+  if(!engNeed(true))return;
+  if(!STU.dur){alert('Press “Prepare” in step 1 first.');return}
+  $('#engQC').hidden=true;$('#engOpenFolder').hidden=true;$('#engRenderBtn').disabled=true;
+  try{const r=await engRun('render',engRenderParams());engShowQC(r)}catch(e){$('#engQC').textContent=e.message;$('#engQC').hidden=false}
+  finally{$('#engRenderBtn').disabled=false}
+}
+async function engWaitRender(id){await new Promise(ok=>{ENG.waiters[id]={ok:j=>{engShowQC(j.result);ok()},fail:()=>ok()};engResolve()})}
+function engShowQC(r){
+  $('#engQC').textContent=`${r.message}\n\n${r.qc.text}\n\nFiles:\n${r.outputs.map(baseName).join('\n')}`;$('#engQC').hidden=false;
+  const b=$('#engOpenFolder');b.hidden=false;b.onclick=()=>engFetch('/api/open-folder',{method:'POST',body:{path:r.outputs[0]}}).catch(e=>alert(e.message));
+}
+
+function engInit(){
+  ENG.token=engToken();
+  STU.settings.snd={...SND_DEFAULTS,...(STU.settings.snd||{})};engSoundUi();engShow();
+  $('#engRetry').addEventListener('click',()=>{ENG.token=engToken();engSay('Looking for the Studio Engine…');engCheck()});
+  $('#engHwTest').addEventListener('click',async()=>{$('#engHw').textContent='Testing… (about 20 seconds)';try{ENG.hw=await engFetch('/api/hardware?force=1');engHwRender()}catch(e){$('#engHw').textContent=e.message}});
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>{const t=$('#'+b.dataset.copy).textContent;navigator.clipboard.writeText(t).then(()=>{b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy',2000)}).catch(()=>prompt('Copy this line:',t))}));
+  $('#engPickVideo').addEventListener('click',()=>engPick('video'));$('#engPickAudio').addEventListener('click',()=>engPick('audio'));
+  document.querySelectorAll('[data-paste]').forEach(b=>b.addEventListener('click',async()=>{const raw=$('#engPastePath').value,p=raw.trim().replace(/^"|"$/g,'');if(!p)return;
+    try{const d=await engFetch('/api/check-path',{method:'POST',body:{path:p}});if(!d.exists){alert('No file found at that location. Check the path and try again.');return}engSetFile(b.dataset.paste,d.path);if($('#engPastePath').value===raw)$('#engPastePath').value=''}catch(e){alert(e.message)}}));
+  $('#engReportBtn').addEventListener('click',engReport);$('#engPrepBtn').addEventListener('click',engPrepare);
+  ['snd_strength','snd_lufs','snd_hp','snd_presence','snd_deess','snd_comp','snd_roomtone'].forEach(id=>$('#'+id).addEventListener(id==='snd_strength'?'input':'change',engSoundSave));
+  $('#engPreviewBtn').addEventListener('click',engPreview);$('#engCleanBtn').addEventListener('click',engClean);
+  $('#engRenderBtn').addEventListener('click',engRender);
+  $('#engJobs').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+    try{if(b.dataset.jcancel)await engFetch(`/api/jobs/${b.dataset.jcancel}/cancel`,{method:'POST'});
+      if(b.dataset.jresume){const j=await engFetch(`/api/jobs/${b.dataset.jresume}/resume`,{method:'POST'});engAfterResume(j)}}catch(err){alert(err.message)}});
+  $('#stu_separate').addEventListener('change',engShow);
+  // only knock on the engine's door when it is expected (installed before, or just opened by it)
+  if(ENG.token)engCheck();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ENG.token&&!ENG.on)engCheck()});
+  // the engine's pairing link can arrive in a tab that is already open (only the #engine=… part changes)
+  window.addEventListener('hashchange',()=>{if(/engine=/.test(location.hash)){ENG.token=engToken();if(!ENG.on)engCheck()}});
+}
+
+/* =====================================================================
+   STUDIO · STAGE 2 — your accurate transcript, smarter cuts, chapters
+   ===================================================================== */
+
+/* ---------- 6. line up the owner's accurate transcript with the recording ---------- */
+const normTok=w=>String(w||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[’‘`]/g,"'").replace(/[^\p{L}\p{N}']/gu,'').replace(/^'+|'+$/g,'');
+function levRatio(a,b){
+  if(a===b)return 1;if(!a||!b)return 0;const m=a.length,n=b.length;let prev=new Array(n+1),cur=new Array(n+1);
+  for(let j=0;j<=n;j++)prev[j]=j;
+  for(let i=1;i<=m;i++){cur[0]=i;for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));[prev,cur]=[cur,prev]}
+  return 1-prev[n]/Math.max(m,n);
+}
+/* Longest increasing run of anchor pairs (keeps them in order on both sides) */
+function lisPairs(pairs){
+  const tails=[],prevIdx=new Array(pairs.length),tailIdx=[];
+  pairs.forEach((p,k)=>{let lo=0,hi=tails.length;while(lo<hi){const mid=(lo+hi)>>1;if(tails[mid]<p[1])lo=mid+1;else hi=mid}
+    tails[lo]=p[1];tailIdx[lo]=k;prevIdx[k]=lo?tailIdx[lo-1]:-1});
+  const out=[];let k=tailIdx[tails.length-1];while(k!=null&&k>=0){out.push(pairs[k]);k=prevIdx[k]}return out.reverse();
+}
+/* Word-by-word alignment of a short stretch (dynamic programming). Returns [[i|-1, j|-1, kind]] */
+function dpAlign(O,H,i0,i1,j0,j1){
+  const n=i1-i0,m=j1-j0,out=[];
+  if(!n&&!m)return out;
+  if(n*m>3e6){ // very long unmatched stretch: spread evenly, everything 'unsure'
+    for(let i=0;i<n;i++)out.push([i0+i,m?j0+Math.min(m-1,Math.floor(i*m/n)):-1,'sub']);
+    return out}
+  const W=m+1,S=new Float32Array((n+1)*W),B=new Uint8Array((n+1)*W);const GAP=-1;
+  const sc=(i,j)=>{const a=O[i0+i].n,b=H[j0+j].n;if(a===b)return 2;const r=levRatio(a,b);return r>=0.75?1:-1};
+  for(let i=1;i<=n;i++){S[i*W]=i*GAP;B[i*W]=1}for(let j=1;j<=m;j++){S[j]=j*GAP;B[j]=2}
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){const d=S[(i-1)*W+j-1]+sc(i-1,j-1),u=S[(i-1)*W+j]+GAP,l=S[i*W+j-1]+GAP;
+    if(d>=u&&d>=l){S[i*W+j]=d;B[i*W+j]=0}else if(u>=l){S[i*W+j]=u;B[i*W+j]=1}else{S[i*W+j]=l;B[i*W+j]=2}}
+  let i=n,j=m;while(i>0||j>0){const b=B[i*W+j];
+    if(i>0&&j>0&&b===0){const s=sc(i-1,j-1);out.push([i0+i-1,j0+j-1,s===2?'same':s===1?'near':'sub']);i--;j--}
+    else if(i>0&&(j===0||b===1)){out.push([i0+i-1,-1,'ins']);i--}else{out.push([-1,j0+j-1,'del']);j--}}
+  return out.reverse();
+}
+/* owner text + recognised words (with times) -> owner's exact words with times */
+function alignTranscript(text,asr){
+  const O=String(text).split(/\s+/).filter(Boolean).map(w=>({w,n:normTok(w)})).filter(o=>o.n||o.w.length);
+  const H=asr.map(w=>({...w,n:normTok(w.w)}));
+  if(!O.length)throw new Error('The transcript is empty.');
+  if(!H.length)throw new Error('Transcribe the recording first (the button above) — its word timings are needed to line up your text.');
+  // anchors: three-word phrases that appear exactly once on both sides
+  const grams=(arr)=>{const m=new Map();for(let i=0;i+2<arr.length;i++){const k=arr[i].n+' '+arr[i+1].n+' '+arr[i+2].n;m.set(k,m.has(k)?-1:i)}return m};
+  const go=grams(O),gh=grams(H),pairs=[];
+  for(const [k,i] of go){if(i<0)continue;const j=gh.get(k);if(j!=null&&j>=0)pairs.push([i,j])}
+  pairs.sort((a,b)=>a[0]-b[0]);
+  const anchors=lisPairs(pairs);const link=[];let pi=0,pj=0;
+  for(const [i,j] of anchors){if(i<pi||j<pj)continue;link.push(...dpAlign(O,H,pi,i,pj,j));for(let k=0;k<3;k++)link.push([i+k,j+k,'same']);pi=i+3;pj=j+3}
+  link.push(...dpAlign(O,H,pi,O.length,pj,H.length));
+  // build the word list in spoken order
+  const words=[];let matched=0;
+  for(const [i,j,kind] of link){
+    if(i>=0&&j>=0){const h=H[j];words.push({w:O[i].w,s:h.s,e:h.e,...(kind==='sub'?{u:1}:{})});if(kind!=='sub')matched++}
+    else if(i>=0)words.push({w:O[i].w,s:null,e:null,u:1});
+    else{const h=H[j];words.push({w:h.w,s:h.s,e:h.e,x:1})}
+  }
+  // owner words the recogniser did not hear: share the time between their neighbours
+  for(let k=0;k<words.length;k++){if(words[k].s!=null)continue;let a=k;while(a<words.length&&words[a].s==null)a++;
+    const prev=words[k-1],next=words[a];const t0=prev?prev.e:Math.max(0,(next?next.s:0)-0.3*(a-k)),t1=next?next.s:t0+0.3*(a-k);
+    const run=words.slice(k,a),tot=run.reduce((s,w)=>s+w.w.length+1,0)||1;let t=t0;
+    run.forEach(w=>{const d=(t1-t0)*(w.w.length+1)/tot;w.s=t;w.e=t+Math.max(0,d);t+=d});k=a-1}
+  return {words,matched,total:O.length,extra:words.filter(w=>w.x).length,unsure:words.filter(w=>w.u).length};
+}
+async function readTranscriptFile(f){
+  if(/\.docx$/i.test(f.name)){
+    if(!window.JSZip)throw new Error('The zip tool did not load. Refresh and try again.');
+    const z=await JSZip.loadAsync(await f.arrayBuffer());const xml=await z.file('word/document.xml').async('string');
+    return xml.replace(/<w:tab\/>/g,' ').replace(/<\/w:p>/g,'\n').replace(/<w:br\/>/g,'\n').replace(/<[^>]+>/g,'')
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+  }
+  if(/\.(srt|vtt)$/i.test(f.name))return (await f.text()).split(/\r?\n/).filter(l=>l.trim()&&!/^\d+$/.test(l.trim())&&!/-->/.test(l)&&!/^WEBVTT/.test(l)).join(' ');
+  return await f.text();
+}
+
+/* ---------- 7. the sound map from the engine: quiet points, real pauses, breaths, missed "um"s ---------- */
+let ANA=null; // {env:Uint8Array (dB+100, 10 ms), speech:[[s,e]], breaths:[[s,e]], floor}
+function anaSet(d){
+  if(!d){ANA=null;return}
+  const bin=atob(d.env_b64),env=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)env[i]=bin.charCodeAt(i);
+  ANA={env,speech:d.speech||[],breaths:d.breaths||[],floor:d.noise_floor_db};
+}
+/* the quietest moment between t0 and t1 (falls back to the middle) */
+function quietest(t0,t1){
+  if(!ANA||!(t1>t0))return (t0+t1)/2;
+  let a=Math.max(0,Math.floor(t0*100)),b=Math.min(ANA.env.length-1,Math.ceil(t1*100));if(b<=a)return (t0+t1)/2;
+  let best=a,v=999;for(let i=a;i<=b;i++){const x=ANA.env[i]+(i>0?ANA.env[i-1]:ANA.env[i])+(i+1<ANA.env.length?ANA.env[i+1]:ANA.env[i]);if(x<v){v=x;best=i}}
+  return Math.min(t1,Math.max(t0,best/100+0.005));
+}
+/* pauses by what you hear: silence between voice stretches, longer than the setting -> shortened.
+   Breaths just before speech are kept when "keep natural breaths" is on. */
+function anaPauseCuts(mp,keepBreaths){
+  if(!ANA)return [];const cuts=[],sp=ANA.speech;
+  for(let k=1;k<sp.length;k++){const a=sp[k-1][1],b=sp[k][0];if(b-a<=mp)continue;
+    let s=a+mp/2,e=b-mp/2;
+    if(keepBreaths){const br=ANA.breaths.find(x=>x[0]>=a-0.05&&x[1]<=b+0.05);if(br){e=Math.min(e,br[0]-0.06);if(e-s<0.15)continue}}
+    s=quietest(s-0.05,s+0.05);e=quietest(e-0.05,e+0.05);if(e-s>0.12)cuts.push([s,e])}
+  return cuts;
+}
+/* voice the transcript has no words for (um, uh, false starts): added to the transcript as [sound] items */
+function anaMissedSounds(words){
+  if(!ANA)return [];const out=[];let k=0;
+  for(const [s,e] of ANA.speech){
+    while(k<words.length&&words[k].e<s)k++;
+    let has=false;for(let i=k;i<words.length&&words[i].s<e;i++){if(words[i].e>s&&!words[i].snd){has=true;break}}
+    const d=e-s;if(!has&&d>=0.15&&d<=1.5)out.push({w:`[sound ${d.toFixed(1)} s]`,s,e,x:1,snd:1});
+  }
+  return out;
+}
+function anaMergeSounds(){
+  const base=STU.words.filter(w=>!w.snd);const extra=anaMissedSounds(base);
+  const removedByWord=new Map(STU.words.map((w,i)=>[w,STU.removed[i]]));
+  STU.words=[...base,...extra].sort((a,b)=>a.s-b.s);
+  const r={};STU.words.forEach((w,i)=>{const v=removedByWord.get(w);if(v)r[i]=v});STU.removed=r;
+  return extra.length;
+}
+
+/* ---------- 8. chapters (YouTube timestamps) ---------- */
+async function stuSuggestChapters(){
+  if(!STU.words.length){stuSay('#stuChapStatus','Transcribe first.');return}
+  const keep=keepSegments(),m=mapper(keep);const lines=[];let cur=[];
+  STU.words.forEach((w,i)=>{if(STU.removed[i]||w.snd)return;cur.push(i);if(/[.?!]$/.test(w.w)||cur.length>60){lines.push(cur);cur=[]}});if(cur.length)lines.push(cur);
+  const text=lines.map((l,k)=>`[${k}] (${fmtT(m.map(STU.words[l[0]].s)??0)}) ${l.map(i=>STU.words[i].w).join(' ')}`).join('\n');
+  stuSay('#stuChapStatus','Asking AI for chapters…');
+  try{
+    const got=await askAny(`Below is the transcript of a recorded spiritual talk (Pranahuti Yoga / Sahaj Marg tradition), split into numbered lines with their time.
+Make YouTube chapters: 4 to 12 chapters for the whole talk, each at least 1 minute long, the first one starting at line 0. Titles: short (2 to 6 words), clear, respectful, in the talk's own language; do not invent content.
+Reply with only JSON: {"chapters":[{"line":0,"title":"Introduction"}]}
+
+TRANSCRIPT:
+${text}`,{json:true,onStatus:t=>stuSay('#stuChapStatus',t)});
+    let arr=parseJSON(got.text);arr=Array.isArray(arr)?arr:(arr.chapters||[]);
+    STU.chapters=arr.filter(c=>c.line>=0&&c.line<lines.length).map(c=>({t:STU.words[lines[c.line][0]].s,title:String(c.title||'').slice(0,80)})).sort((a,b)=>a.t-b.t);
+    if(STU.chapters.length)STU.chapters[0].t=Math.min(STU.chapters[0].t,keep.length?keep[0][0]:0);
+    stuSave();stuRenderChapters();stuSay('#stuChapStatus',`${STU.chapters.length} chapters suggested (with ${PROVIDERS[got.pid].label}). Edit the titles, remove or add as you like.`);
+  }catch(e){stuSay('#stuChapStatus',errMsg(e))}
+}
+/* chapter times on the EDITED video (what YouTube needs) */
+function chapterEditedTime(c,keep,m){let t=m.map(c.t);if(t==null){const seg=keep.find(([s])=>s>=c.t);t=seg?m.map(seg[0]):null}return t}
+function chaptersEdited(){
+  const keep=keepSegments(),m=mapper(keep);const out=[];
+  for(const c of STU.chapters||[]){const t=chapterEditedTime(c,keep,m);if(t!=null)out.push({t,title:c.title})}
+  out.sort((a,b)=>a.t-b.t);if(out.length)out[0].t=0;return out;
+}
+const ytTime=t=>{t=Math.max(0,Math.floor(t));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')};
+function chaptersText(){return chaptersEdited().map(c=>`${ytTime(c.t)} ${c.title}`).join('\n')}
+function stuRenderChapters(){
+  const box=$('#stuChapters');if(!box)return;const ed=chaptersEdited(),keep=keepSegments(),m=mapper(keep);
+  box.innerHTML=(STU.chapters||[]).map((c,i)=>{const t=i===0&&ed.length?0:chapterEditedTime(c,keep,m);return `<div class="chap"><span class="status">${t!=null?ytTime(t):'—'}</span><input data-chap="${i}" value="${esc(c.title)}"><button class="btn small" data-chapgo="${i}" title="Play">▶</button><button class="btn small" data-chapdel="${i}" title="Remove">✕</button></div>`}).join('')||'<p class="status">No chapters yet.</p>';
+  const warn=[];if(ed.length&&ed.length<3)warn.push('YouTube needs at least 3 chapters.');
+  for(let i=1;i<ed.length;i++)if(ed[i].t-ed[i-1].t<10){warn.push('Each chapter must be at least 10 seconds long.');break}
+  stuSay('#stuChapWarn',warn.join(' '));
+}
+
+/* ---------- wiring ---------- */
+function stage2Init(){
+  $('#stuOwnFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{$('#stuOwnText').value=await readTranscriptFile(f);STU.ownText=$('#stuOwnText').value;stuSave();stuSay('#stuAlignStatus',`Loaded ${f.name}: ${STU.ownText.split(/\s+/).filter(Boolean).length.toLocaleString()} words.`)}catch(err){stuSay('#stuAlignStatus','Could not read that file: '+err.message)}e.target.value=''});
+  $('#stuOwnText').addEventListener('change',e=>{STU.ownText=e.target.value;stuSave()});
+  if(STU.ownText)$('#stuOwnText').value=STU.ownText;
+  $('#stuAlign').addEventListener('click',()=>{
+    const text=$('#stuOwnText').value.trim();STU.ownText=text;
+    const asr=(STU.asrWords&&STU.asrWords.length?STU.asrWords:STU.words.filter(w=>!w.snd&&!w.u&&!w.x));
+    if(STU.words.some((w,i)=>STU.removed[i]==='user')&&!confirm('Lining up replaces the transcript in the editor; your manual cuts will be cleared. Continue?'))return;
+    try{if(!STU.asrWords||!STU.asrWords.length)STU.asrWords=asr.map(({w,s,e})=>({w,s,e}));
+      const r=alignTranscript(text,STU.asrWords);STU.words=r.words;STU.removed={};STU.aligned=true;
+      if(ANA)anaMergeSounds();autoMarks();stuSave();stuRenderTranscript();stuRenderChapters();
+      const pct=(100*r.matched/r.total);STU.alignStats={pct,unsure:r.unsure,extra:r.extra};
+      stuSay('#stuAlignStatus',`Lined up: ${pct.toFixed(1)}% of your words matched the recording${pct>=98?' ✓':''}. ${r.unsure} word(s) to check (orange), ${r.extra} spoken word(s) not in your text (grey: um, repeats — cut automatically if ticked below).`);
+    }catch(e){stuSay('#stuAlignStatus',e.message)}});
+  $('#stuNextUnsure').addEventListener('click',()=>{const v=stuVideo(),t=v?v.currentTime:0;
+    let i=STU.words.findIndex(w=>w.u&&w.s>t+0.3);if(i<0)i=STU.words.findIndex(w=>w.u);if(i<0){alert('Nothing left to check.');return}
+    const el=$(`#stuText [data-i="${i}"]`);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1500)}if(v&&v.src){v.currentTime=Math.max(0,STU.words[i].s-1.5);v.play().catch(()=>{})}});
+  $('#stu_extraCut').addEventListener('change',e=>{STU.settings.extraCut=e.target.checked;autoMarks();stuSave();stuRenderTranscript()});
+  $('#stu_keepBreaths').addEventListener('change',e=>{STU.settings.keepBreaths=e.target.checked;stuSave();stuStats()});
+  $('#stu_xfade').addEventListener('change',e=>{STU.settings.xfade=Math.max(0,Math.min(200,+e.target.value||0));stuSave()});
+  $('#stu_extraCut').checked=STU.settings.extraCut!==false;$('#stu_keepBreaths').checked=STU.settings.keepBreaths!==false;$('#stu_xfade').value=STU.settings.xfade??40;
+  $('#stuAnalyse').addEventListener('click',async()=>{
+    if(!ENG.on){alert('This needs the Studio Engine (top of this tab).');return}if(!engNeed(true))return;
+    stuSay('#stuAnaStatus','The engine is listening to the cleaned sound (see progress above)…');
+    try{const r=await engRun('analyse',engParams());const d=await (await fetch(engFileUrl(r.analysis))).json();anaSet(d);STU.anaFile=r.analysis;
+      const n=STU.words.length?anaMergeSounds():0;autoMarks();await stuSave();stuRenderTranscript();
+      stuSay('#stuAnaStatus',`${r.message} ${n?`${n} sound(s) without words added to the transcript as [sound] (grey).`:''} Cuts now land on the quietest moment; pauses are measured by what you hear.`)}
+    catch(e){stuSay('#stuAnaStatus',e.message)}});
+  $('#stuChapSuggest').addEventListener('click',stuSuggestChapters);
+  $('#stuChapAdd').addEventListener('click',()=>{const v=stuVideo();STU.chapters=[...(STU.chapters||[]),{t:v?v.currentTime:0,title:'New chapter'}].sort((a,b)=>a.t-b.t);stuSave();stuRenderChapters()});
+  $('#stuChapters').addEventListener('input',e=>{const i=e.target.dataset.chap;if(i!=null){STU.chapters[+i].title=e.target.value;stuSave()}});
+  $('#stuChapters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.chapdel!=null){STU.chapters.splice(+b.dataset.chapdel,1);stuSave();stuRenderChapters()}
+    if(b.dataset.chapgo!=null){const v=stuVideo();if(v.src){v.currentTime=STU.chapters[+b.dataset.chapgo].t;v.play().catch(()=>{})}}});
+  $('#stuChapCopy').addEventListener('click',()=>{const t=chaptersText();navigator.clipboard.writeText(t).then(()=>stuSay('#stuChapStatus','Copied — paste into the YouTube description.')).catch(()=>prompt('Copy:',t))});
+  stuRenderChapters();
+  if(STU.anaFile&&ENG.on)fetch(engFileUrl(STU.anaFile)).then(r=>r.json()).then(d=>{anaSet(d);stuStats()}).catch(()=>{});
+}
 
 </script>
 </body>

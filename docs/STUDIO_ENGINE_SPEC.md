@@ -37,6 +37,7 @@ HandBrake, MediaInfo for our use — **free, local, private, paid-tool quality**
 
 ## Features (must-have, in this order)
 ### Stage 1 — Foundation + audio (test: 10-min clip, then full hour)
+**Status: built and tested on synthetic media (see `engine/tests`). Waiting for the owner's real 10-minute clip.**
 1. Engine install + "connected" status in Studio tab; hardware report; job progress & cancel; resumable jobs.
 2. Media report (MediaInfo-like): codec, HDR, VFR, rotation, duration mismatch between files, audio level/clipping.
 3. Proxy: 540p CFR H.264 for smooth preview in the browser (generated automatically).
@@ -45,6 +46,9 @@ HandBrake, MediaInfo for our use — **free, local, private, paid-tool quality**
 5. Audio: DeepFilterNet voice isolation (strength slider), EQ (high-pass, presence), de-esser, gentle compression,
    two-pass loudness (choice −16 / −14 LUFS), room-tone fill for cut gaps (no dead silence), A/B preview 30 s before/after.
 ### Stage 2 — Text editing with the accurate transcript
+**Status: built and tested (synthetic + espeak voice). Alignment = Groq Whisper word times + text alignment of the
+owner's transcript (anchors + dynamic programming), cut points snapped to the quietest 10 ms using a Silero VAD /
+loudness map from the engine. (WhisperX/wav2vec2 could not be fetched or tested from the build machine.)**
 6. Paste/upload owner's accurate transcript → **forced alignment** to the cleaned audio → transcript in editor uses
    the owner's exact words with word timings. Flag low-confidence regions for review.
 7. Edit by deleting text (existing), filler/silence removal (existing + auto-editor-quality detection),

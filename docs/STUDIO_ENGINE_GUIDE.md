@@ -1,0 +1,64 @@
+# Studio Engine — how to use it (plain steps)
+
+The Studio Engine is a free helper program that runs **on your own computer**. The website's Studio tab
+sends it work (check files, clean the sound, sync, make the final videos) and shows the progress.
+Your video never leaves your computer.
+
+## 1. Install (once, 5–15 minutes)
+
+**Windows**
+1. Right-click the **Start** button (the Windows logo) → click **Terminal** (or **Windows PowerShell**).
+2. Copy this line, paste it into that window (right-click pastes) and press **Enter**:
+
+   `irm https://raw.githubusercontent.com/rpingclaw-cmd/PSM/main/engine/install.ps1 | iex`
+3. Wait until it says **All done!** It installs: uv (Python manager), ffmpeg (video tool),
+   DeepFilterNet (AI voice isolation) and the engine itself.
+4. The website opens by itself and the Studio tab shows **Engine connected ✓**.
+   If the browser asks to *access other apps and services on this device*, click **Allow**.
+
+**Mac**: open **Terminal**, paste
+`curl -fsSL https://raw.githubusercontent.com/rpingclaw-cmd/PSM/main/engine/install.sh | bash` and press **Return**.
+
+**Update** the engine later: run the same line again.
+
+## 2. Every time
+
+1. Double-click **Start Studio Engine** on your desktop. A black window opens — keep it open
+   (you can minimise it). The website opens and connects.
+2. To stop the engine, close that black window.
+
+## 3. Editing a talk (Studio tab)
+
+1. **Your files** — tick *I recorded the audio separately* if you used a recorder. Click **Choose video…**
+   and **Choose separate audio…** (the window may open behind the browser). Click **Check files** to see a
+   report (HDR, frame rate, length difference, clipping, free disk space).
+2. Click **Prepare** — makes a small preview copy and the sound files used for sync (a few minutes per hour of video).
+3. **Sync** — click **Find sync automatically**. It checks the start, middle and end and tells you the error
+   (should be well under 20 ms).
+4. **Clean the sound** — set the voice isolation slider, click **Preview 30 s before / after**, listen, adjust.
+5. **Transcribe** (free Groq key in Setup). Then paste **your accurate transcript** (or load the .txt/.docx file)
+   and press **Line up my transcript with the recording**: the editor now shows *your exact words*, each at the
+   right moment. Orange-underlined words are worth a quick check (**Next word to check ▸** jumps there);
+   grey words were spoken but are not in your text (um, repeats) and are cut automatically.
+6. **Edit by text** — press **Listen for pauses, breaths and missed “um”s**: the engine maps where the voice is, so
+   every cut lands on the quietest moment, long pauses are shortened by what you actually hear, natural breaths
+   are kept, and short sounds without words appear as grey [sound] items you can keep or cut.
+   *Smooth cuts* cross-fades the sound at every cut (40 ms is a good default).
+7. **Reels & chapters** — ✨ suggests Reels and YouTube chapters; edit the titles. Chapter times follow your edits.
+8. **Make the final files** — choose **1080p** on this laptop, then **Make the final files on this computer**.
+   The files appear next to your video, with *Edited - quality check.txt* (lip sync at 3 points, loudness, length)
+   and *Edited - chapters.txt* (paste into the YouTube description).
+
+If anything is interrupted (laptop closed, power cut), start the engine again and press **Resume**
+on the job — finished parts are kept.
+
+## Free tools used (all open source)
+
+| Tool | What for | Licence |
+|---|---|---|
+| ffmpeg (Gyan.dev build on Windows, Homebrew on Mac) | reading/writing video and audio | GPL / LGPL |
+| DeepFilterNet 3 (`deep-filter` 0.5.6) | AI voice isolation | MIT / Apache-2.0 |
+| uv | installs Python and the engine's libraries | MIT / Apache-2.0 |
+| Python 3.13, FastAPI, Uvicorn, NumPy | the engine itself | PSF / MIT / BSD |
+| Silero VAD 6 (bundled model) + ONNX Runtime | where the voice is (pauses, breaths, missed ums) | MIT / MIT |
+| OpenCV + YuNet face detector (bundled model) | automatic framing (Stage 3) | Apache-2.0 / Apache-2.0 |
